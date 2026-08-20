@@ -9,12 +9,14 @@ import {
 import { router } from "@inertiajs/react"
 import { Link } from '@inertiajs/react'
 import { ArrowLeft, ShieldCheck } from 'lucide-react'
+import { RegistrationDialog } from "@/components/registration-dialog"
 
 export default function RegisterPage() {
     const [prefix, setPrefix] = useState(['', ''])
     const [digits, setDigits] = useState(['', '', ''])
     const [error, setError] = useState('')
     const [isAnimating, setIsAnimating] = useState(false)
+    const [registrationOpen, setRegistrationOpen] = useState(false)
 
     const prefixRefs = [
         useRef<HTMLInputElement>(null),
@@ -102,16 +104,28 @@ export default function RegisterPage() {
         }
     }
 
+    const code = `${prefix.join("")}-${digits.join("")}`
+    console.log(code)
+
     function handleSubmit() {
-        const code = prefix.join('') + '-' + digits.join('')
         if (prefix.some((c) => !c) || digits.some((d) => !d)) {
             setError('Введите код полностью')
             return
         }
-        setIsAnimating(true)
-        setTimeout(() => {
-            router.visit(`/toy/${code}`)
-        }, 600)
+
+        router.post('/registration/send-code', {
+            toy_code: code,
+        }, {
+            onError: (errors) => {
+                setError(
+                    errors.toy_code ?? 'Произошла ошибка'
+                )
+            },
+
+            onSuccess: () => {
+                console.log('Код успешно отправлен')
+            },
+        })
     }
 
     const isComplete = prefix.every((c) => c) && digits.every((d) => d)
@@ -120,7 +134,20 @@ export default function RegisterPage() {
 
     return (
         <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-10">
-            {/* single soft light source, no glow-blob clutter */}
+            <RegistrationDialog
+                open={registrationOpen}
+                onOpenChange={setRegistrationOpen}
+                toyCode={`${prefix.join("")}-${digits.join("")}`}
+                onComplete={() => {
+                    const code = `${prefix.join("")}-${digits.join("")}`
+
+                    setIsAnimating(true)
+
+                    setTimeout(() => {
+                        router.visit(`/toy/${code}`)
+                    }, 600)
+                }}
+            />
             <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_100%_at_50%_0%,oklch(0.55_0.19_25/0.12),transparent_70%)]"
