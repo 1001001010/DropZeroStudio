@@ -81,6 +81,9 @@ export function RegistrationDialog({
             .toString()
             .padStart(2, "0")}`
 
+    const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute('content')
     /*
      * Первый шаг:
      * email + secret key.
@@ -108,21 +111,27 @@ export function RegistrationDialog({
         setIsLoading(true)
 
         try {
-            /*
-             * TODO:
-             *
-             * await fetch("/api/registration/send-code", {
-             *     method: "POST",
-             *     headers: {
-             *         "Content-Type": "application/json",
-             *     },
-             *     body: JSON.stringify({
-             *         toy_code: toyCode,
-             *         email,
-             *         secret_key: secretKey,
-             *     }),
-             * })
-             */
+            const response = await fetch('/registration/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken ?? '',
+                },
+                body: JSON.stringify({
+                    toy_code: toyCode,
+                    email: email,
+                    secret_key: secretKey
+
+                }),
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                setError(data.message ?? 'Произошла ошибка')
+                return
+            }
 
             await new Promise((resolve) => setTimeout(resolve, 700))
 

@@ -4,15 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Http\Requests\VerifyToyCodeRequest;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use Inertia\Response;
-use Illuminate\Http\JsonResponse;
+use App\Http\Requests\{SecretVerifyRequest, VerifyToyCodeRequest};
 use App\Models\Toy;
+use Illuminate\Http\{JsonResponse, RedirectResponse, Request};
+use Illuminate\Support\Facades\{Auth, Hash, Route};
+use Inertia\{Inertia, Response};
 
 class AuthenticatedSessionController extends Controller
 {
@@ -73,6 +69,30 @@ class AuthenticatedSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Фигурка доступна для активации.',
+        ]);
+    }
+
+    public function verify(SecretVerifyRequest $request): JsonResponse
+    {
+        $toy = Toy::where('code', $request->toy_code)->first();
+
+        if (!$toy) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Фигурка с таким кодом не найдена.',
+            ], 404);
+        }
+
+        if (!Hash::check($request->secret_key, $toy->secret_hash)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Неверный секретный ключ.',
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Секретный ключ верный.',
         ]);
     }
 }

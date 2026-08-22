@@ -107,25 +107,45 @@ export default function RegisterPage() {
     const code = `${prefix.join("")}-${digits.join("")}`
     console.log(code)
 
-    function handleSubmit() {
+    async function handleSubmit() {
         if (prefix.some((c) => !c) || digits.some((d) => !d)) {
             setError('Введите код полностью')
             return
         }
 
-        router.post('/registration/send-code', {
-            toy_code: code,
-        }, {
-            onError: (errors) => {
-                setError(
-                    errors.toy_code ?? 'Произошла ошибка'
-                )
-            },
+        setError('')
 
-            onSuccess: () => {
-                console.log('Код успешно отправлен')
-            },
-        })
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content')
+
+        try {
+            const response = await fetch('/registration/send-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken ?? '',
+                },
+                body: JSON.stringify({
+                    toy_code: code,
+                }),
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                setError(data.message ?? 'Произошла ошибка')
+                return
+            }
+
+            // Laravel ответил success: true
+            if (data.success) {
+                setRegistrationOpen(true)
+            }
+        } catch {
+            setError('Не удалось связаться с сервером')
+        }
     }
 
     const isComplete = prefix.every((c) => c) && digits.every((d) => d)
