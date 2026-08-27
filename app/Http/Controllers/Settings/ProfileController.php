@@ -10,9 +10,26 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Toy;
 
 class ProfileController extends Controller
 {
+
+    public function profile(string $code)
+    {
+        $toy = Toy::where('code', $code)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if (!$toy) {
+            abort(404, 'Игрушка не найдена или она вам не принадлежит');
+        }
+
+        return Inertia::render('profile', [
+            'toy' => $toy,
+        ]);
+    }
+
     /**
      * Show the user's profile settings page.
      */

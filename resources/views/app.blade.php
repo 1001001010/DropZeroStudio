@@ -15,7 +15,7 @@
     <meta name="keywords"
         content="DropZeroStudio, коллекционные фигурки, коллекционные игрушки, плюшевые фигурки, лимитированные фигурки, коллекционирование">
 
-    <meta name="author" content="DropZeroStudio">   
+    <meta name="author" content="DropZeroStudio">
 
     <meta name="robots" content="index, follow">
 

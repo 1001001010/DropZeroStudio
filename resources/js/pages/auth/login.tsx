@@ -9,7 +9,8 @@ import {
 import { router } from "@inertiajs/react"
 import { Link } from '@inertiajs/react'
 import { ArrowLeft, ShieldCheck } from 'lucide-react'
-import { RegistrationDialog } from "@/components/registration-dialog"
+import { RegistrationDialog } from "@/components/auth/registration-dialog"
+import { ToyLoginDialog } from "@/components/auth/toy-login-dialog"
 
 export default function RegisterPage() {
     const [prefix, setPrefix] = useState(['', ''])
@@ -17,6 +18,7 @@ export default function RegisterPage() {
     const [error, setError] = useState('')
     const [isAnimating, setIsAnimating] = useState(false)
     const [registrationOpen, setRegistrationOpen] = useState(false)
+    const [loginOpen, setLoginOpen] = useState(false)
 
     const prefixRefs = [
         useRef<HTMLInputElement>(null),
@@ -109,23 +111,25 @@ export default function RegisterPage() {
 
     async function handleSubmit() {
         if (prefix.some((c) => !c) || digits.some((d) => !d)) {
-            setError('Введите код полностью')
+            setError("Введите код полностью")
             return
         }
 
-        setError('')
+        setError("")
 
         const csrfToken = document
             .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content')
+            ?.getAttribute("content")
 
         try {
-            const response = await fetch('/registration/send-code', {
-                method: 'POST',
+            setIsAnimating(true)
+
+            const response = await fetch("/auth/send-code", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken ?? '',
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": csrfToken ?? "",
                 },
                 body: JSON.stringify({
                     toy_code: code,
@@ -135,16 +139,23 @@ export default function RegisterPage() {
             const data = await response.json()
 
             if (!response.ok) {
-                setError(data.message ?? 'Произошла ошибка')
+                setError(data.message ?? "Произошла ошибка")
                 return
             }
 
-            // Laravel ответил success: true
-            if (data.success) {
+            if (data.mode === "registration") {
                 setRegistrationOpen(true)
+                return
+            }
+
+            if (data.mode === "login") {
+                setLoginOpen(true)
+                return
             }
         } catch {
-            setError('Не удалось связаться с сервером')
+            setError("Не удалось связаться с сервером")
+        } finally {
+            setIsAnimating(false)
         }
     }
 
@@ -157,6 +168,20 @@ export default function RegisterPage() {
             <RegistrationDialog
                 open={registrationOpen}
                 onOpenChange={setRegistrationOpen}
+                toyCode={`${prefix.join("")}-${digits.join("")}`}
+                onComplete={() => {
+                    const code = `${prefix.join("")}-${digits.join("")}`
+
+                    setIsAnimating(true)
+
+                    setTimeout(() => {
+                        router.visit(`/toy/${code}`)
+                    }, 600)
+                }}
+            />
+            <ToyLoginDialog
+                open={loginOpen}
+                onOpenChange={setLoginOpen}
                 toyCode={`${prefix.join("")}-${digits.join("")}`}
                 onComplete={() => {
                     const code = `${prefix.join("")}-${digits.join("")}`

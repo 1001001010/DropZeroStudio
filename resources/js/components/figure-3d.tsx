@@ -6,10 +6,12 @@ import {
     ContactShadows,
     Environment,
     Float,
+    Html,
     OrbitControls,
     useGLTF,
-} from '@react-three/drei'
+} from "@react-three/drei"
 import { Box3, Vector3, type Group } from 'three'
+import { Spinner } from "@/components/ui/spinner"
 
 /**
  * Путь к твоей модели. Положи файл в `public/models/Model.glb`
@@ -42,7 +44,7 @@ function GLBModel() {
     })
 
     return (
-        <group ref={group} position={[0, -0.15, 0]}>
+        <group ref={group} position={[0, 0, 0]}>
             <group scale={scale} position={[-offset.x * scale, -offset.y * scale, -offset.z * scale]}>
                 <primitive object={object} />
             </group>
@@ -145,20 +147,42 @@ export function Figure3D() {
             />
             <pointLight position={[-4, -1, -3]} intensity={8} color="#AA141E" />
 
-            <Suspense fallback={null}>
-                <Float speed={1.4} rotationIntensity={0.3} floatIntensity={0.5}>
+            <Suspense
+                fallback={
+                    <Html
+                        center
+                        position={[0, 0, 0]}
+                        style={{
+                            width: "100px",
+                            height: "100px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                        }}
+                    >
+
+                        <Spinner className="size-8 text-primary" />
+                    </Html>
+                }
+            >
+                <Float
+                    speed={1.4}
+                    rotationIntensity={0.3}
+                    floatIntensity={0.15}
+                >
                     <ModelErrorBoundary fallback={<ShadowCreature />}>
                         <GLBModel />
                     </ModelErrorBoundary>
                 </Float>
+
                 <ContactShadows
                     position={[0, -1.6, 0]}
                     opacity={0.55}
                     scale={9}
                     blur={2.6}
                     far={4}
-                    color="#000000"
                 />
+
                 <Environment preset="warehouse" />
             </Suspense>
 

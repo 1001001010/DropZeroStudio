@@ -8,7 +8,6 @@ const links = [
     { href: '#collection', label: 'Коллекция' },
     { href: '#specs', label: 'Спецификация' },
 ]
-
 export function SiteNav() {
     const [scrolled, setScrolled] = useState(false)
 

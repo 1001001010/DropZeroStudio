@@ -236,29 +236,30 @@ export function RegistrationDialog({
         setIsLoading(true)
 
         try {
-            /*
-             * TODO:
-             *
-             * await fetch("/api/registration/verify", {
-             *     method: "POST",
-             *     headers: {
-             *         "Content-Type": "application/json",
-             *     },
-             *     body: JSON.stringify({
-             *         toy_code: toyCode,
-             *         email,
-             *         secret_key: secretKey,
-             *         code,
-             *     }),
-             * })
-             */
+            const response = await fetch("/registration/confirm", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": csrfToken ?? "",
+                },
+                body: JSON.stringify({
+                    email,
+                    code,
+                }),
+            })
 
-            await new Promise((resolve) => setTimeout(resolve, 700))
+            const data = await response.json()
+
+            if (!response.ok) {
+                setError(data.message ?? "Неверный код подтверждения")
+                return
+            }
 
             onComplete?.()
             onOpenChange(false)
         } catch {
-            setError("Неверный код подтверждения")
+            setError("Не удалось проверить код. Попробуйте ещё раз.")
         } finally {
             setIsLoading(false)
         }
@@ -276,10 +277,6 @@ export function RegistrationDialog({
         setIsLoading(true)
 
         try {
-            /*
-             * TODO:
-             * повторный запрос на backend
-             */
 
             await new Promise((resolve) => setTimeout(resolve, 700))
 
