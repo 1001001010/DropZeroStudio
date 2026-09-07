@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::controller(AuthenticatedSessionController::class)->group(function () {
     Route::get('/login', 'login')->name('login');
+    Route::post('logout', 'destroy')->name('logout');
 
     Route::middleware('guest')->group(function () {
         Route::post('/login', 'store')->name('login.store');

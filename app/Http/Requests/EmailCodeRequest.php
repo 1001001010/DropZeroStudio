@@ -14,11 +14,6 @@ class EmailCodeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'toy_code' => [
-                'required',
-                'string',
-            ],
-
             'email' => [
                 'nullable',
                 'email',
@@ -35,7 +30,6 @@ class EmailCodeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'toy_code.required' => 'Введите код фигурки.',
 
             'email.email' => 'Введите корректный email.',
 

@@ -29,7 +29,7 @@ class SkinPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -37,7 +37,7 @@ class SkinPolicy
      */
     public function update(User $user, Skin $skin): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -45,7 +45,7 @@ class SkinPolicy
      */
     public function delete(User $user, Skin $skin): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -53,7 +53,7 @@ class SkinPolicy
      */
     public function restore(User $user, Skin $skin): bool
     {
-        return false;
+        return true;
     }
 
     /**

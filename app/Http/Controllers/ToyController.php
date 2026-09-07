@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreToyRequest;
 use App\Http\Requests\UpdateToyRequest;
 use App\Models\Toy;
+use Inertia\{Inertia, Response};
+
 
 class ToyController extends Controller
 {
@@ -13,7 +15,7 @@ class ToyController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('admin/toys/index');
     }
 
     /**

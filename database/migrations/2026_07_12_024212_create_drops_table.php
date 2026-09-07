@@ -12,23 +12,16 @@ return new class extends Migration {
     {
         Schema::create('drops', function (Blueprint $table) {
             $table->id();
-
             $table->foreignId('skin_id')
                 ->constrained()
                 ->cascadeOnDelete();
-
             $table->string('name');
-
             $table->unsignedInteger('edition_size');
-
             $table->decimal('price', 10, 2);
-
             $table->date('production_started_at')->nullable();
             $table->date('production_completed_at')->nullable();
-
             $table->date('sale_started_at')->nullable();
             $table->date('sale_ended_at')->nullable();
-
             $table->timestamps();
             $table->softDeletes();
         });

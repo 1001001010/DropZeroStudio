@@ -111,7 +111,7 @@ export function RegistrationDialog({
         setIsLoading(true)
 
         try {
-            const response = await fetch('/registration/verify', {
+            const response = await fetch('/auth/registration/verify', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -236,7 +236,7 @@ export function RegistrationDialog({
         setIsLoading(true)
 
         try {
-            const response = await fetch("/registration/confirm", {
+            const response = await fetch("/auth/registration/confirm", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

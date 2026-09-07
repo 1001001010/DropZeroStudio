@@ -212,7 +212,7 @@ export default function RegisterPage() {
                         DROPZERO Studio
                     </span>
                     <p className="max-w-xs text-pretty text-sm leading-relaxed text-muted-foreground">
-                        Активируйте свою коллекционную фигурку по серийному номеру
+                        Активируйте свою коллекционную фигурку по уникальному коду
                     </p>
                 </div>
 
@@ -220,9 +220,6 @@ export default function RegisterPage() {
                     <div className="flex items-center justify-between border-b border-border px-5 py-3">
                         <span className="font-mono text-[0.7rem] uppercase tracking-widest text-muted-foreground">
                             Авторизация
-                        </span>
-                        <span className="font-mono text-[0.7rem] uppercase tracking-widest text-muted-foreground">
-                            XX-000
                         </span>
                     </div>
 
@@ -296,7 +293,7 @@ export default function RegisterPage() {
                             {isAnimating ? (
                                 <>
                                     <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
-                                    Активация...
+                                    Вход...
                                 </>
                             ) : (
                                 <>
@@ -309,7 +306,7 @@ export default function RegisterPage() {
                 </div>
 
                 <p className="text-center text-xs leading-relaxed text-muted-foreground">
-                    Код напечатан на дне упаковки вашей фигурки.
+                    Код расположен на правом крыле каждой фигурки
                     <br />
                     Формат:{' '}
                     <span className="font-mono text-foreground/70">XX-000</span>

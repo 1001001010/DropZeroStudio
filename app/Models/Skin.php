@@ -23,6 +23,7 @@ class Skin extends Model
         'is_active',
     ];
 
+
     protected function casts(): array
     {
         return [

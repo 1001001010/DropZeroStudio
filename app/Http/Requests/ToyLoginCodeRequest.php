@@ -14,6 +14,11 @@ class ToyLoginCodeRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'toy_code' => [
+                'required',
+                'string',
+            ],
+
             'code' => [
                 'required',
                 'string',

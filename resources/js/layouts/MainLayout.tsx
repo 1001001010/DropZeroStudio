@@ -1,23 +1,49 @@
-import type { ReactNode } from "react";
+
+import { useEffect, type ReactNode } from 'react'
+import { usePage } from '@inertiajs/react'
+import { toast } from 'sonner'
+
+import { Toaster } from '@/components/ui/sonner'
 
 interface MainLayoutProps {
-    children: ReactNode;
+    children: ReactNode
+}
+
+interface FlashProps {
+    success?: string
+    error?: string
+    mode?: string
+}
+
+interface PageProps extends Record<string, unknown> {
+    flash?: FlashProps
 }
 
 export default function MainLayout({
     children,
 }: MainLayoutProps) {
+    const { flash } = usePage<PageProps>().props
+    console.log('FLASH:', flash)
+
+    useEffect(() => {
+
+        if (flash?.success) {
+            toast.success(flash.success)
+        }
+
+        if (flash?.error) {
+            toast.error(flash.error)
+        }
+    }, [flash?.success, flash?.error])
+
     return (
         <div className="min-h-screen bg-[#050505] text-white">
-
-            {/* HEADER */}
-
             <header
                 className="
                     fixed
-                    top-0
                     left-0
                     right-0
+                    top-0
                     z-50
                     border-b
                     border-white/10
@@ -37,9 +63,6 @@ export default function MainLayout({
                         lg:px-6
                     "
                 >
-
-                    {/* LOGO */}
-
                     <a
                         href="/"
                         className="
@@ -54,9 +77,6 @@ export default function MainLayout({
                             Studio
                         </span>
                     </a>
-
-
-                    {/* NAVIGATION */}
 
                     <nav
                         className="
@@ -120,9 +140,6 @@ export default function MainLayout({
                         </a>
                     </nav>
 
-
-                    {/* ACCOUNT */}
-
                     <a
                         href="/account"
                         className="
@@ -146,19 +163,12 @@ export default function MainLayout({
                     >
                         Личный кабинет
                     </a>
-
                 </div>
             </header>
-
-
-            {/* PAGE CONTENT */}
 
             <main className="pt-16">
                 {children}
             </main>
-
-
-            {/* FOOTER */}
 
             <footer
                 className="
@@ -176,7 +186,6 @@ export default function MainLayout({
                         lg:px-6
                     "
                 >
-
                     <div
                         className="
                             flex
@@ -187,16 +196,8 @@ export default function MainLayout({
                             md:justify-between
                         "
                     >
-
-                        {/* BRAND */}
-
                         <div>
-                            <div
-                                className="
-                                    text-lg
-                                    font-black
-                                "
-                            >
+                            <div className="text-lg font-black">
                                 DropZero
                                 <span className="text-[#AA141E]">
                                     Studio
@@ -217,9 +218,6 @@ export default function MainLayout({
                             </p>
                         </div>
 
-
-                        {/* LINKS */}
-
                         <div
                             className="
                                 flex
@@ -232,39 +230,26 @@ export default function MainLayout({
                         >
                             <a
                                 href="/privacy"
-                                className="
-                                    transition-colors
-                                    hover:text-white
-                                "
+                                className="transition-colors hover:text-white"
                             >
                                 Конфиденциальность
                             </a>
 
                             <a
                                 href="/terms"
-                                className="
-                                    transition-colors
-                                    hover:text-white
-                                "
+                                className="transition-colors hover:text-white"
                             >
                                 Условия
                             </a>
 
                             <a
                                 href="/contacts"
-                                className="
-                                    transition-colors
-                                    hover:text-white
-                                "
+                                className="transition-colors hover:text-white"
                             >
                                 Контакты
                             </a>
                         </div>
-
                     </div>
-
-
-                    {/* COPYRIGHT */}
 
                     <div
                         className="
@@ -279,10 +264,10 @@ export default function MainLayout({
                         © {new Date().getFullYear()} DropZeroStudio.
                         Все права защищены.
                     </div>
-
                 </div>
             </footer>
 
+            <Toaster />
         </div>
-    );
+    )
 }

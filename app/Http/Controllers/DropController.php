@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDropRequest;
 use App\Http\Requests\UpdateDropRequest;
 use App\Models\Drop;
+use Inertia\{Inertia, Response};
+
 
 class DropController extends Controller
 {
@@ -13,7 +15,8 @@ class DropController extends Controller
      */
     public function index()
     {
-        //
+
+        return Inertia::render('admin/drops/index');
     }
 
     /**
