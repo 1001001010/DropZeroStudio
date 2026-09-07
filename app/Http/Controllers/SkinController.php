@@ -21,9 +21,16 @@ class SkinController extends Controller
      */
     public function index()
     {
+        $skins = Skin::withTrashed()->with('drops')->orderBy('name')->get();
         return Inertia::render('admin/skins/index', [
             'drops' => Drop::with('skin')->latest()->get(),
-            'skins' => Skin::withTrashed()->with('drops')->orderBy('name')->get(),
+            'skins' => $skins,
+            'stats' => [
+                'total' => $skins->whereNull('deleted_at')->count(),
+                'active' => $skins->whereNull('deleted_at')->where('is_active', true)->count(),
+                'inactive' => $skins->whereNull('deleted_at')->where('is_active', false)->count(),
+                'deleted' => $skins->whereNotNull('deleted_at')->count(),
+            ],
         ]);
     }
 

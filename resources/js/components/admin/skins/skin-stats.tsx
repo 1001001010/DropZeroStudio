@@ -1,67 +1,87 @@
 import {
     CheckCircle2,
-    // CircleDollarSign,
     Package,
-} from "lucide-react"
+    Trash2,
+    XCircle,
+} from 'lucide-react'
 
 import {
     Card,
     CardContent,
-} from "@/components/ui/card"
+} from '@/components/ui/card'
 
-// import { formatPrice } from "@/lib/utils"
+import { SkinStats as SkinStatsType } from '@/types'
 
 export function SkinStats({
     total,
     active,
-    // totalEdition,
-    // totalValue,
-}: {
-    total: number
-    active: number
-    totalEdition: number
-    totalValue: number
-}) {
+    inactive,
+    deleted,
+}: SkinStatsType) {
     return (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
                 title="Всего скинов"
                 value={total}
-                description="скинов в каталоге"
+                description={`${pluralize(
+                    total,
+                    'скин',
+                    'скина',
+                    'скинов',
+                )
+                    } в каталоге`}
                 icon={
                     <Package className="size-5 text-muted-foreground" />
                 }
             />
 
             <StatCard
-                title="В продаже"
+                title="Активные"
                 value={active}
-                description="Активные скины"
+                description={`${pluralize(
+                    active,
+                    'скин',
+                    'скина',
+                    'скинов',
+                )
+                    } доступны в каталоге`}
                 icon={
                     <CheckCircle2 className="size-5 text-emerald-500" />
                 }
                 iconWrapperClass="bg-emerald-500/10"
             />
 
-            {/* <StatCard
-                title="Тираж"
-                value={totalEdition.toLocaleString("ru-RU")}
-                description="Всего экземпляров"
+            <StatCard
+                title="Неактивные"
+                value={inactive}
+                description={`${pluralize(
+                    inactive,
+                    'скин',
+                    'скина',
+                    'скинов',
+                )
+                    } скрыты из каталога`}
                 icon={
-                    <Package className="size-5 text-blue-500" />
+                    <XCircle className="size-5 text-orange-500" />
                 }
-                iconWrapperClass="bg-blue-500/10"
+                iconWrapperClass="bg-orange-500/10"
             />
 
             <StatCard
-                title="Стоимость тиражей"
-                value={formatPrice(totalValue)}
-                description="Потенциальная выручка"
+                title="Удалённые"
+                value={deleted}
+                description={`${pluralize(
+                    deleted,
+                    'скин',
+                    'скина',
+                    'скинов',
+                )
+                    } находятся в корзине`}
                 icon={
-                    <CircleDollarSign className="size-5 text-violet-500" />
+                    <Trash2 className="size-5 text-red-500" />
                 }
-                iconWrapperClass="bg-violet-500/10"
-            /> */}
+                iconWrapperClass="bg-red-500/10"
+            />
         </div>
     )
 }
@@ -79,7 +99,7 @@ function StatCard({
     value,
     description,
     icon,
-    iconWrapperClass = "bg-muted/40",
+    iconWrapperClass = 'bg-muted/40',
 }: StatCardProps) {
     return (
         <Card>
@@ -96,7 +116,7 @@ function StatCard({
                     </div>
 
                     <div
-                        className={`flex size-10 items-center justify-center rounded-xl border ${iconWrapperClass}`}
+                        className={`flex size - 10 items - center justify - center rounded - xl border ${iconWrapperClass} `}
                     >
                         {icon}
                     </div>
@@ -108,4 +128,34 @@ function StatCard({
             </CardContent>
         </Card>
     )
+}
+
+function pluralize(
+    count: number,
+    one: string,
+    few: string,
+    many: string,
+): string {
+    const absoluteCount = Math.abs(count) % 100
+    const lastDigit = absoluteCount % 10
+
+    if (
+        absoluteCount >= 11 &&
+        absoluteCount <= 19
+    ) {
+        return `${count} ${many} `
+    }
+
+    if (lastDigit === 1) {
+        return `${count} ${one} `
+    }
+
+    if (
+        lastDigit >= 2 &&
+        lastDigit <= 4
+    ) {
+        return `${count} ${few} `
+    }
+
+    return `${count} ${many} `
 }

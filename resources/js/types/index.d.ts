@@ -31,7 +31,7 @@ export interface Skin {
     id: number
     name: string
     slug: string
-    drop: Drop[]  // ← Меняем с Drop на Drop[] (массив)
+    drops: Drop[]
     description: string | null
     model_path: string | null
     primary_color: string | null
@@ -133,3 +133,11 @@ export type DropStatus =
     | "ready"
     | "ended"
     | "planned"
+
+
+export type SkinStats = {
+    total: number
+    active: number
+    inactive: number
+    deleted: number
+}

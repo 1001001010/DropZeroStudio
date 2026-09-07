@@ -1,6 +1,9 @@
-import { Search, XCircle } from "lucide-react"
+import {
+    Search,
+    XCircle,
+} from 'lucide-react'
 
-import { Input } from "@/components/ui/input"
+import { Input } from '@/components/ui/input'
 
 import {
     Select,
@@ -8,7 +11,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
 
 type Props = {
     search: string
@@ -33,14 +36,14 @@ export function SkinsFilters({
                     onChange={(event) =>
                         onSearchChange(event.target.value)
                     }
-                    placeholder="Поиск коллекции..."
+                    placeholder="Поиск скина..."
                     className="h-9 w-full pl-9 pr-9 sm:w-[250px]"
                 />
 
                 {search && (
                     <button
                         type="button"
-                        onClick={() => onSearchChange("")}
+                        onClick={() => onSearchChange('')}
                         className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >
                         <XCircle className="size-4" />
@@ -58,27 +61,19 @@ export function SkinsFilters({
 
                 <SelectContent>
                     <SelectItem value="all">
-                        Все статусы
+                        Все скины
                     </SelectItem>
 
                     <SelectItem value="active">
-                        В продаже
+                        Активные
                     </SelectItem>
 
-                    <SelectItem value="production">
-                        Производство
+                    <SelectItem value="inactive">
+                        Неактивные
                     </SelectItem>
 
-                    <SelectItem value="ready">
-                        Готова
-                    </SelectItem>
-
-                    <SelectItem value="planned">
-                        Запланирована
-                    </SelectItem>
-
-                    <SelectItem value="ended">
-                        Завершена
+                    <SelectItem value="deleted">
+                        Удалённые
                     </SelectItem>
                 </SelectContent>
             </Select>

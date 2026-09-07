@@ -3,21 +3,25 @@ import {
     Package,
     Trash2,
 } from 'lucide-react'
-import { useState } from 'react'
+
+import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
+
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+
 import {
     Table,
     TableBody,
@@ -43,10 +47,55 @@ export function SkinTable({
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
 
+    /**
+     * Фильтрация скинов по поиску и статусу.
+     */
+    const filteredSkins = useMemo(() => {
+        const normalizedSearch = search.trim().toLowerCase()
+
+        return skins.filter((skin) => {
+            const isDeleted = Boolean(skin.deleted_at)
+
+            const matchesSearch =
+                normalizedSearch === '' ||
+                (skin.name ?? '')
+                    .toLowerCase()
+                    .includes(normalizedSearch) ||
+                (skin.slug ?? '')
+                    .toLowerCase()
+                    .includes(normalizedSearch) ||
+                (skin.description ?? '')
+                    .toLowerCase()
+                    .includes(normalizedSearch)
+
+            if (!matchesSearch) {
+                return false
+            }
+
+            switch (statusFilter) {
+                case 'active':
+                    return !isDeleted && skin.is_active
+
+                case 'inactive':
+                    return !isDeleted && !skin.is_active
+
+                case 'deleted':
+                    return isDeleted
+
+                case 'all':
+                default:
+                    return true
+            }
+        })
+    }, [skins, search, statusFilter])
+
     // Проверяем, есть ли дропы у скинов
     const hasDrops = skins.some(
-        (skin) => skin.drop && skin.drop.length > 0,
+        (skin) => skin.drops && skin.drops.length > 0,
     )
+
+    const hasFilters =
+        search.trim() !== '' || statusFilter !== 'all'
 
     return (
         <Card className="overflow-hidden">
@@ -58,7 +107,7 @@ export function SkinTable({
                         </CardTitle>
 
                         <p className="mt-1 text-sm text-muted-foreground">
-                            {skins.length} скинов
+                            {filteredSkins.length} из {skins.length}
                         </p>
                     </div>
 
@@ -99,8 +148,8 @@ export function SkinTable({
                         </TableHeader>
 
                         <TableBody>
-                            {skins.length > 0 ? (
-                                skins.map((skin) => (
+                            {filteredSkins.length > 0 ? (
+                                filteredSkins.map((skin) => (
                                     <SkinRow
                                         key={skin.id}
                                         skin={skin}
@@ -122,9 +171,11 @@ export function SkinTable({
                                             </p>
 
                                             <p className="mt-1 text-sm text-muted-foreground">
-                                                {hasDrops
-                                                    ? 'Все скины были удалены или отфильтрованы'
-                                                    : 'Добавьте первый скин'}
+                                                {hasFilters
+                                                    ? 'Попробуйте изменить параметры поиска или фильтра'
+                                                    : hasDrops
+                                                        ? 'Все скины были удалены'
+                                                        : 'Добавьте первый скин'}
                                             </p>
                                         </div>
                                     </TableCell>
@@ -147,45 +198,35 @@ function SkinRow({
 
     return (
         <TableRow
-            className={`
-                group transition-colors
-                ${isDeleted
-                    ? 'bg-destructive/[0.03] hover:bg-destructive/[0.06]'
-                    : 'hover:bg-muted/40'
-                }
-            `}
+            className={`group transition-colors ${isDeleted
+                ? 'bg-destructive/[0.03] hover:bg-destructive/[0.06]'
+                : 'hover:bg-muted/40'
+                } `}
         >
             {/* Скин */}
             <TableCell className="py-4 pl-6">
                 <div className="flex items-center gap-3">
                     <div
-                        className={`
-                            flex size-11 shrink-0 items-center justify-center
-                            overflow-hidden rounded-xl border
-                            ${isDeleted
-                                ? 'border-destructive/20 bg-destructive/5'
-                                : 'bg-muted/40'
-                            }
-                        `}
+                        className={`flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border ${isDeleted
+                            ? 'border-destructive/20 bg-destructive/5'
+                            : 'bg-muted/40'
+                            } `}
                     >
                         {skin.preview_image ? (
                             <img
                                 src={`/storage/${skin.preview_image}`}
                                 alt={skin.name}
-                                className={`
-                                    size-full object-cover
-                                    ${isDeleted ? 'grayscale opacity-60' : ''}
-                                `}
+                                className={`size-full object-cover ${isDeleted
+                                    ? 'grayscale opacity-60'
+                                    : ''
+                                    } `}
                             />
                         ) : (
                             <Package
-                                className={`
-                                    size-5
-                                    ${isDeleted
-                                        ? 'text-destructive/50'
-                                        : 'text-muted-foreground'
-                                    }
-                                `}
+                                className={`size-5 ${isDeleted
+                                    ? 'text-destructive/50'
+                                    : 'text-muted-foreground'
+                                    } `}
                             />
                         )}
                     </div>
@@ -193,13 +234,10 @@ function SkinRow({
                     <div className="min-w-0">
                         <div className="flex items-center gap-2">
                             <p
-                                className={`
-                                    truncate font-medium
-                                    ${isDeleted
-                                        ? 'text-muted-foreground'
-                                        : ''
-                                    }
-                                `}
+                                className={`truncate font-medium ${isDeleted
+                                    ? 'text-muted-foreground'
+                                    : ''
+                                    } `}
                             >
                                 {skin.name || 'Без названия'}
                             </p>
@@ -222,13 +260,10 @@ function SkinRow({
             {/* Описание */}
             <TableCell>
                 <p
-                    className={`
-                        max-w-[300px] truncate font-medium
-                        ${isDeleted
-                            ? 'text-muted-foreground'
-                            : ''
-                        }
-                    `}
+                    className={`max-w-[300px] truncate font-medium ${isDeleted
+                        ? 'text-muted-foreground'
+                        : ''
+                        } `}
                 >
                     {skin.description || '—'}
                 </p>
@@ -251,7 +286,7 @@ function SkinRow({
                                 skin.primary_color || '#ffffff',
                         }}
                         title={`Основной: ${skin.primary_color ?? '—'
-                            }`}
+                            } `}
                     />
 
                     {/* Вторичный */}
@@ -262,7 +297,7 @@ function SkinRow({
                                 skin.secondary_color || '#ffffff',
                         }}
                         title={`Вторичный: ${skin.secondary_color ?? '—'
-                            }`}
+                            } `}
                     />
 
                     {/* Акцентный */}
@@ -273,7 +308,7 @@ function SkinRow({
                                 skin.accent_color || '#ffffff',
                         }}
                         title={`Акцентный: ${skin.accent_color ?? '—'
-                            }`}
+                            } `}
                     />
                 </div>
             </TableCell>
@@ -297,16 +332,10 @@ function SkinRow({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className={`
-                                size-8 opacity-60
-                                transition-opacity
-                                hover:opacity-100
-                                group-hover:opacity-100
-                                ${isDeleted
-                                    ? 'text-destructive hover:text-destructive'
-                                    : ''
-                                }
-                            `}
+                            className={`size-8 opacity-60 transition-opacity hover: opacity-100 group-hover: opacity-100 ${isDeleted
+                                ? 'text-destructive hover:text-destructive'
+                                : ''
+                                } `}
                         >
                             <MoreHorizontal className="size-4" />
                         </Button>
