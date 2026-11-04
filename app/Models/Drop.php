@@ -39,7 +39,7 @@ class Drop extends Model
 
     public function skin(): BelongsTo
     {
-        return $this->belongsTo(Skin::class);
+        return $this->belongsTo(Skin::class)->withTrashed();
     }
 
     public function toys(): HasMany

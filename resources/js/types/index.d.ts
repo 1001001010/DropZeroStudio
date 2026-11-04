@@ -44,11 +44,13 @@ export interface Skin {
     deleted_at: string | null
 }
 
+export type DropSkin = Omit<Skin, 'drop'>
+
 // Исправляем циклическую зависимость
 export interface Drop {
     id: number
     skin_id: number
-    skin: Omit<Skin, 'drop'>  // ← Используем Omit чтобы убрать поле drop
+    skin: DropSkin
     name: string
     edition_size: number
     price: number
@@ -140,4 +142,11 @@ export type SkinStats = {
     active: number
     inactive: number
     deleted: number
+}
+
+export type DropStats = {
+    total: number
+    active: number
+    totalQuantity: number
+    potentialRevenue: number
 }

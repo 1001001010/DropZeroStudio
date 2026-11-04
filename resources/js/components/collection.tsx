@@ -7,19 +7,19 @@ const collection = [
         name: 'Shadow',
         number: '001',
         description: 'Первая тень коллекции.',
-        image: '/figures/shadow.png',
+        image: '/storage/skins/previews/8SNiTSKgLVdsGmeWfJ5NXXMpB24xOKqHUM5CA23d.jpg',
     },
     {
         name: 'Nightmare',
         number: '002',
         description: 'Рождённый из ночных кошмаров.',
-        image: '/figures/nightmare.png',
+        image: '/storage/skins/previews/8SNiTSKgLVdsGmeWfJ5NXXMpB24xOKqHUM5CA23d.jpg',
     },
     {
         name: 'Void',
         number: '003',
         description: 'Там, где заканчивается свет.',
-        image: '/figures/void.png',
+        image: '/storage/skins/previews/8SNiTSKgLVdsGmeWfJ5NXXMpB24xOKqHUM5CA23d.jpg',
     },
 ]
 

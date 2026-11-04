@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDropRequest;
 use App\Http\Requests\UpdateDropRequest;
 use App\Models\Drop;
-use Inertia\{Inertia, Response};
+use Inertia\{Inertia};
+use Illuminate\Support\Facades\DB;
 
 
 class DropController extends Controller
@@ -15,8 +16,38 @@ class DropController extends Controller
      */
     public function index()
     {
+        $drops = Drop::withTrashed()
+            ->with('skin')
+            ->orderBy('name')
+            ->get();
 
-        return Inertia::render('admin/drops/index');
+        $activeDrops = Drop::query()
+            ->whereNotNull('sale_started_at')
+            ->where('sale_started_at', '<=', now())
+            ->where(function ($query) {
+                $query->whereNull('sale_ended_at')
+                    ->orWhere('sale_ended_at', '>=', now());
+            });
+
+        $stats = [
+            'total' => Drop::count(),
+
+            'active' => (clone $activeDrops)->count(),
+
+            'totalQuantity' => Drop::sum('edition_size'),
+
+            'potentialRevenue' => Drop::sum(
+                DB::raw('edition_size * price')
+            ),
+        ];
+
+        return Inertia::render(
+            'admin/drops/index',
+            [
+                'drops' => $drops,
+                'stats' => $stats,
+            ]
+        );
     }
 
     /**

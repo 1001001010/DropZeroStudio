@@ -14,19 +14,10 @@ export function SkinHeader() {
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
                 <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
-                    {/* <Package className="size-4" />
-
-                    <span>Каталог</span>
-
-                    <span>/</span>
-
-                    <span className="text-foreground">
-                        Скины
-                    </span> */}
                     <Breadcrumb>
                         <BreadcrumbList>
                             <BreadcrumbItem>
-                                <BreadcrumbLink href={route('admin.index')}>Каталог</BreadcrumbLink>
+                                <BreadcrumbLink href={route('admin.index')}>Главная</BreadcrumbLink>
                             </BreadcrumbItem>
                             <BreadcrumbSeparator />
                             <BreadcrumbItem>
