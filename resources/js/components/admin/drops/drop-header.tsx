@@ -6,9 +6,14 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import StoreDropDialog from "@/components/admin/drops/store-drop-dialog"
+import { Skin } from "@/types/index"
 
+interface DropHeaderProps {
+    skins: Skin[]
+}
 
-export function DropHeader() {
+export function DropHeader({ skins }: DropHeaderProps) {
     return (
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
@@ -34,16 +39,7 @@ export function DropHeader() {
                     Управление дропами, просмотр информации о цене и сроках
                 </p>
             </div>
-            {/*
-            <Button
-                variant="outline"
-                className="h-10"
-            >
-                <Plus className="mr-2 size-4" />
-
-                Новый скин
-            </Button> */}
-            {/* <StoreSkinDialog /> */}
+            <StoreDropDialog skins={skins} />
         </div>
     )
 }

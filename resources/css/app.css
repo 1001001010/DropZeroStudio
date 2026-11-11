@@ -209,3 +209,71 @@ html {
     background: #d4d4d8;
     border-radius: 20px;
 }
+
+
+.legal-markdown h3 {
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+    color: rgb(255 255 255 / 85%);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.legal-markdown p {
+    margin-top: 0.5rem;
+    line-height: 1.9;
+}
+
+.legal-markdown ul {
+    margin: 0.75rem 0;
+    padding-left: 1.5rem;
+    list-style: disc;
+}
+
+.legal-markdown ol {
+    margin: 0.75rem 0;
+    padding-left: 1.5rem;
+    list-style: decimal;
+}
+
+.legal-markdown li {
+    padding-left: 0.25rem;
+    margin-top: 0.35rem;
+}
+
+.legal-markdown strong {
+    color: rgb(255 255 255 / 85%);
+    font-weight: 600;
+}
+
+.legal-markdown a {
+    color: #AA141E;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.legal-markdown blockquote {
+    margin: 1rem 0;
+    padding-left: 1rem;
+    border-left: 2px solid #AA141E;
+    color: rgb(255 255 255 / 45%);
+}
+
+.legal-markdown table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.legal-markdown th,
+.legal-markdown td {
+    border: 1px solid rgb(255 255 255 / 10%);
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.legal-markdown th {
+    background: rgb(255 255 255 / 5%);
+    color: rgb(255 255 255 / 85%);
+}

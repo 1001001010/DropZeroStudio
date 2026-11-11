@@ -1,21 +1,28 @@
 /* prettier-ignore */
-import {
-createInertiaApp
-} from '@inertiajs/react';
+import { createInertiaApp } from '@inertiajs/react';
 import createServer from '@inertiajs/react/server';
+import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import ReactDOMServer from 'react-dom/server';
+
+const appName = import.meta.env.VITE_APP_NAME || 'DropZeroStudio';
 
 createServer((page) =>
     createInertiaApp({
         page,
+
         render: ReactDOMServer.renderToString,
-        resolve: (name) => {
-            const pages = import.meta.glob('./pages/**/*.tsx', {
-                eager: true,
-            });
-            return pages[`./pages/${name}.tsx`];
-        },
-        // prettier-ignore
+
+        title: (title) => (title ? `${title} | ${appName}` : appName),
+
+        resolve: (name) =>
+            resolvePageComponent(
+                `./pages/${name}.tsx`,
+                import.meta.glob('./pages/**/*.tsx', {
+                    eager: true,
+                }),
+            ),
+
+        /* prettier-ignore */
         setup: ({ App, props }) => <App {...props} />,
     }),
 );

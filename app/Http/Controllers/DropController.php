@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDropRequest;
 use App\Http\Requests\UpdateDropRequest;
 use App\Models\Drop;
+use App\Models\Skin;
 use Inertia\{Inertia};
 use Illuminate\Support\Facades\DB;
 
@@ -44,6 +45,7 @@ class DropController extends Controller
         return Inertia::render(
             'admin/drops/index',
             [
+                'skins' => Skin::get(),
                 'drops' => $drops,
                 'stats' => $stats,
             ]

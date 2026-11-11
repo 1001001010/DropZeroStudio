@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Link } from "@inertiajs/react"
 import { Mail, KeyRound, ArrowRight, ShieldCheck, RefreshCw } from "lucide-react"
 
 type RegistrationDialogProps = {
@@ -42,6 +44,7 @@ export function RegistrationDialog({
     const [error, setError] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [seconds, setSeconds] = useState(300)
+    const [personalDataConsent, setPersonalDataConsent] = useState(false)
 
     const codeRefs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -57,6 +60,7 @@ export function RegistrationDialog({
             setError("")
             setIsLoading(false)
             setSeconds(300)
+            setPersonalDataConsent(false)
         }
     }, [open])
 
@@ -105,6 +109,11 @@ export function RegistrationDialog({
 
         if (!secretKey.trim()) {
             setError("Введите секретный ключ")
+            return
+        }
+
+        if (!personalDataConsent) {
+            setError("Необходимо согласие на обработку персональных данных")
             return
         }
 
@@ -503,10 +512,39 @@ export function RegistrationDialog({
                                 </p>
                             )}
 
+                            {/* Согласие на обработку персональных данных */}
+                            <div className="flex items-start gap-3">
+                                <Checkbox
+                                    id="personal-data-consent"
+                                    checked={personalDataConsent}
+                                    onCheckedChange={(checked) => {
+                                        setPersonalDataConsent(checked === true)
+                                        setError("")
+                                    }}
+                                    className="mt-0.5"
+                                />
+
+                                <Label
+                                    htmlFor="personal-data-consent"
+                                    className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground"
+                                >
+                                    Я даю согласие на обработку персональных данных и ознакомился(ась) с{" "}
+                                    <Link
+                                        href="/legal/privacy"
+                                        target="_blank"
+                                        className="text-foreground underline underline-offset-4 transition-colors hover:text-primary"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        Политикой конфиденциальности
+                                    </Link>
+                                    .
+                                </Label>
+                            </div>
+
                             <button
                                 type="button"
                                 onClick={handleContinue}
-                                disabled={isLoading}
+                                disabled={isLoading || !personalDataConsent}
                                 className="
                                     group
                                     flex

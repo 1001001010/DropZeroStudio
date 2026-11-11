@@ -5,6 +5,7 @@ import {
     Package,
     ShoppingBag,
     BookOpen,
+    LucideDownloadCloud,
 } from 'lucide-react'
 
 import { router, Link, usePage } from '@inertiajs/react'
@@ -77,6 +78,17 @@ export function AdminNav() {
 
                             <span className="hidden sm:inline">
                                 Скины
+                            </span>
+                        </Link>
+
+                        <Link
+                            href={route('admin.legal.index')}
+                            className="group flex min-h-10 items-center gap-2 rounded-md px-3 font-mono text-[11px] uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                            <LucideDownloadCloud className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5" />
+
+                            <span className="hidden sm:inline">
+                                Документы
                             </span>
                         </Link>
 

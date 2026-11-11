@@ -9,15 +9,7 @@
 
     <meta name="theme-color" content="#050505">
 
-    <meta name="description"
-        content="DropZeroStudio — лимитированная коллекция коллекционных фигурок. Уникальные дизайны, ограниченные серии и цифровая регистрация владельца.">
-
-    <meta name="keywords"
-        content="DropZeroStudio, коллекционные фигурки, коллекционные игрушки, плюшевые фигурки, лимитированные фигурки, коллекционирование">
-
     <meta name="author" content="DropZeroStudio">
-
-    <meta name="robots" content="index, follow">
 
     {{-- Open Graph --}}
 
@@ -26,13 +18,6 @@
     <meta property="og:locale" content="ru_RU">
 
     <meta property="og:site_name" content="DropZeroStudio">
-
-    <meta property="og:title" content="DropZeroStudio — Коллекционные фигурки">
-
-    <meta property="og:description"
-        content="Лимитированные коллекционные фигурки DropZeroStudio. Открой свою коллекцию.">
-
-    <meta property="og:image" content="{{ asset('images/og-image.jpg') }}">
 
     <meta property="og:image:width" content="1200">
 
@@ -43,12 +28,6 @@
     {{-- Twitter --}}
 
     <meta name="twitter:card" content="summary_large_image">
-
-    <meta name="twitter:title" content="DropZeroStudio — Коллекционные фигурки">
-
-    <meta name="twitter:description" content="Лимитированные коллекционные фигурки DropZeroStudio.">
-
-    <meta name="twitter:image" content="{{ asset('images/og-image.jpg') }}">
 
     {{-- Favicon --}}
 
@@ -62,9 +41,7 @@
 
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet">
 
-    <title inertia>
-        {{ config('app.name', 'DropZeroStudio') }}
-    </title>
+    <title inertia>DropZeroStudio</title>
 
     @routes
 

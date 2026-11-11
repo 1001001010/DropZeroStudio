@@ -153,6 +153,10 @@ export function DropTable({
                                 </TableHead>
 
                                 <TableHead className="h-11">
+                                    Период шитья
+                                </TableHead>
+
+                                <TableHead className="h-11">
                                     Период продаж
                                 </TableHead>
 
@@ -223,6 +227,16 @@ function DropRow({
     const isDeleted = Boolean(drop.deleted_at)
     const status = getDropStatus(drop)
 
+    const formatDate = (date: string | null) => {
+        if (!date) return 'Не указана'
+
+        return new Date(date).toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        })
+    }
+
     return (
         <TableRow
             className={`group transition-colors ${isDeleted
@@ -233,9 +247,9 @@ function DropRow({
             {/* Дроп */}
             <TableCell className="py-4 pl-6">
                 <div className="flex items-center gap-3">
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border bg-muted/40">
+                    {/* <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border bg-muted/40">
                         <Package className="size-5 text-muted-foreground" />
-                    </div>
+                    </div> */}
 
                     <div className="min-w-0">
                         <p className={`truncate font-medium ${isDeleted ? 'text-muted-foreground' : ''
@@ -283,6 +297,23 @@ function DropRow({
                 <span className="font-medium tabular-nums">
                     {formatCurrency(Number(drop.price))}
                 </span>
+            </TableCell>
+
+            {/* Период шитья */}
+            <TableCell>
+                <div className="flex flex-col gap-1 text-xs">
+                    <div className="flex items-center gap-1.5">
+                        <CalendarDays className="size-3.5 text-muted-foreground" />
+
+                        <span>
+                            {formatDate(drop.production_started_at)}
+                        </span>
+                    </div>
+
+                    <span className="pl-5 text-muted-foreground">
+                        до {formatDate(drop.production_completed_at)}
+                    </span>
+                </div>
             </TableCell>
 
             {/* Период продаж */}
@@ -416,16 +447,6 @@ function DropStatusBadge({
             {variant.label}
         </span>
     )
-}
-
-function formatDate(date: string | null) {
-    if (!date) return 'Не указана'
-
-    return new Date(`${date}T00:00:00`).toLocaleDateString('ru-RU', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    })
 }
 
 function formatCurrency(value: number) {

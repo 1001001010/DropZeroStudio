@@ -8,15 +8,18 @@ import { DropTable } from "@/components/admin/drops/drop-table"
 
 import type {
     Drop,
+    Skin,
     PageProps
 } from "@/types/index"
 
 
-export default function CollectionsPage({
+export default function DropPage({
     drops,
+    skins,
     stats
 }: PageProps<{
     drops: Drop[]
+    skins: Skin[]
     stats: DropStatsType
 }>) {
     return (
@@ -24,7 +27,7 @@ export default function CollectionsPage({
             <AdminNav />
 
             <div className="space-y-8 p-6 lg:p-8">
-                <DropHeader />
+                <DropHeader skins={skins} />
 
                 <DropStats
                     total={stats.total}
