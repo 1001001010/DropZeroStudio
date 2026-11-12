@@ -5,6 +5,9 @@ namespace App\Services\auth;
 use App\Mail\ToyVerificationCode;
 use App\Models\{Toy, User};
 use Illuminate\Support\Facades\{Auth, Hash, Mail, Redis};
+use App\Models\UserConsent;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class LoginService
 {
@@ -119,9 +122,14 @@ class LoginService
      * @param string $code
      * @return array
      */
+
     public function confirm(
         string $email,
-        string $code
+        string $code,
+        bool $personalDataConsent,
+        bool $termsAccepted,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
     ): array {
         $savedCode = $this->getRedisCode(
             $this->activationCodeKey($email)
@@ -137,6 +145,13 @@ class LoginService
         if (!hash_equals($savedCode, $code)) {
             return $this->error(
                 'Неверный код подтверждения.',
+                422
+            );
+        }
+
+        if (!$personalDataConsent || !$termsAccepted) {
+            return $this->error(
+                'Для регистрации необходимо принять обязательные документы.',
                 422
             );
         }
@@ -159,40 +174,115 @@ class LoginService
             );
         }
 
-        $toy = $this->findToy($toyCode);
+        try {
+            $result = DB::transaction(function () use ($email, $toyCode, $ipAddress, $userAgent) {
+                // Блокируем фигурку, чтобы исключить одновременную активацию.
+                $toy = Toy::where('code', $toyCode)
+                    ->lockForUpdate()
+                    ->first();
 
-        if (!$toy) {
+                if (!$toy) {
+                    throw ValidationException::withMessages([
+                        'toy_code' => 'Игрушка с таким кодом не найдена.',
+                    ]);
+                }
+
+                if ($toy->user_id !== null) {
+                    throw ValidationException::withMessages([
+                        'toy_code' => 'Эта игрушка уже привязана к пользователю.',
+                    ]);
+                }
+
+                // Получаем опубликованные текущие редакции документов.
+                $documentVersions = DB::table('legal_documents as documents')
+                    ->join(
+                        'legal_document_versions as versions',
+                        'versions.id',
+                        '=',
+                        'documents.current_version_id'
+                    )
+                    ->whereIn('documents.slug', [
+                        'personal-data-consent',
+                        'terms',
+                    ])
+                    ->where('documents.is_active', true)
+                    ->where('versions.status', 'published')
+                    ->whereNotNull('versions.published_at')
+                    ->select([
+                        'documents.slug',
+                        'versions.id',
+                    ])
+                    ->get()
+                    ->keyBy('slug');
+
+                $personalDataVersion = $documentVersions->get(
+                    'personal-data-consent'
+                );
+
+                $termsVersion = $documentVersions->get('terms');
+
+                if (!$personalDataVersion || !$termsVersion) {
+                    throw ValidationException::withMessages([
+                        'documents' => 'Не удалось найти опубликованные редакции обязательных документов.',
+                    ]);
+                }
+
+                // Создаём пользователя.
+                $user = $this->getOrCreateUser($email);
+
+                // Привязываем фигурку.
+                $this->attachToyToUser($toy, $user);
+
+                // Сохраняем согласие на обработку персональных данных.
+                UserConsent::create([
+                    'user_id' => $user->id,
+                    'document_version_id' => $personalDataVersion->id,
+                    'source' => 'registration',
+                    'ip_address' => $ipAddress,
+                    'user_agent' => $userAgent,
+                    'accepted_at' => now(),
+                ]);
+
+                // Сохраняем принятие пользовательского соглашения.
+                UserConsent::create([
+                    'user_id' => $user->id,
+                    'document_version_id' => $termsVersion->id,
+                    'source' => 'registration',
+                    'ip_address' => $ipAddress,
+                    'user_agent' => $userAgent,
+                    'accepted_at' => now(),
+                ]);
+
+                return [
+                    'user' => $user,
+                    'toy' => [
+                        'code' => $toy->code,
+                        'number' => $toy->number,
+                    ],
+                ];
+            });
+
+            // Авторизуем только после успешного завершения транзакции.
+            Auth::login($result['user']);
+
+            // Удаляем временные данные регистрации.
+            $this->forgetActivationData($email);
+
+            return $this->success(
+                'Email успешно подтверждён. Игрушка привязана к вашему аккаунту.',
+                [
+                    'toy' => $result['toy'],
+                ]
+            );
+        } catch (ValidationException $exception) {
             return $this->error(
-                'Игрушка с таким кодом не найдена.',
-                404
+                collect($exception->errors())->flatten()->first()
+                ?? 'Не удалось завершить регистрацию.',
+                422
             );
         }
-
-        if ($toy->user_id !== null) {
-            return $this->error(
-                'Эта игрушка уже привязана к пользователю.',
-                409
-            );
-        }
-
-        $user = $this->getOrCreateUser($email);
-
-        $this->attachToyToUser($toy, $user);
-
-        Auth::login($user);
-
-        $this->forgetActivationData($email);
-
-        return $this->success(
-            'Email успешно подтверждён. Игрушка привязана к вашему аккаунту.',
-            [
-                'toy' => [
-                    'code' => $toy->code,
-                    'number' => $toy->number,
-                ],
-            ]
-        );
     }
+
 
     /**
      * Отправка кода для входа по активированной игрушке.

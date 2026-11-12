@@ -45,6 +45,7 @@ export function RegistrationDialog({
     const [isLoading, setIsLoading] = useState(false)
     const [seconds, setSeconds] = useState(300)
     const [personalDataConsent, setPersonalDataConsent] = useState(false)
+    const [termsAccepted, setTermsAccepted] = useState(false)
 
     const codeRefs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -61,6 +62,7 @@ export function RegistrationDialog({
             setIsLoading(false)
             setSeconds(300)
             setPersonalDataConsent(false)
+            setTermsAccepted(false)
         }
     }, [open])
 
@@ -109,6 +111,11 @@ export function RegistrationDialog({
 
         if (!secretKey.trim()) {
             setError("Введите секретный ключ")
+            return
+        }
+
+        if (!personalDataConsent || !termsAccepted) {
+            setError('Необходимо принять оба обязательных документа.')
             return
         }
 
@@ -254,7 +261,9 @@ export function RegistrationDialog({
                 },
                 body: JSON.stringify({
                     email,
-                    code,
+                    code: verificationCode.join(''),
+                    personal_data_consent: personalDataConsent,
+                    terms_accepted: termsAccepted,
                 }),
             })
 
@@ -307,7 +316,7 @@ export function RegistrationDialog({
             <DialogContent
                 className="
                     w-[calc(100%-2rem)]
-                    max-w-md
+                    max-w-xl
                     overflow-hidden
                     rounded-xl
                     border-border
@@ -512,33 +521,73 @@ export function RegistrationDialog({
                                 </p>
                             )}
 
-                            {/* Согласие на обработку персональных данных */}
-                            <div className="flex items-start gap-3">
-                                <Checkbox
-                                    id="personal-data-consent"
-                                    checked={personalDataConsent}
-                                    onCheckedChange={(checked) => {
-                                        setPersonalDataConsent(checked === true)
-                                        setError("")
-                                    }}
-                                    className="mt-0.5"
-                                />
+                            <div className="space-y-4">
+                                {/* Согласие на обработку персональных данных */}
+                                <div className="flex items-start gap-3">
+                                    <Checkbox
+                                        id="personal-data-consent"
+                                        checked={personalDataConsent}
+                                        onCheckedChange={(checked) => {
+                                            setPersonalDataConsent(checked === true)
+                                            setError('')
+                                        }}
+                                    />
 
-                                <Label
-                                    htmlFor="personal-data-consent"
-                                    className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground"
-                                >
-                                    Я даю согласие на обработку персональных данных и ознакомился(ась) с{" "}
+                                    <Label
+                                        htmlFor="personal-data-consent"
+                                        className="text-sm leading-relaxed text-muted-foreground cursor-pointer"
+                                    >
+                                        Я даю согласие на обработку персональных данных в соответствии с{' '}
+                                        <Link
+                                            href="/legal/personal-data-consent"
+                                            target="_blank"
+                                            className="text-foreground underline underline-offset-4 hover:text-[#AA141E]"
+                                        >
+                                            Согласием на обработку персональных данных
+                                        </Link>
+                                        .
+                                    </Label>
+                                </div>
+
+                                {/* Пользовательское соглашение */}
+                                <div className="flex items-start gap-3">
+                                    <Checkbox
+                                        id="terms-accepted"
+                                        checked={termsAccepted}
+                                        onCheckedChange={(checked) => {
+                                            setTermsAccepted(checked === true)
+                                            setError('')
+                                        }}
+                                    />
+
+                                    <Label
+                                        htmlFor="terms-accepted"
+                                        className="text-sm leading-relaxed text-muted-foreground cursor-pointer"
+                                    >
+                                        Я принимаю условия{' '}
+                                        <Link
+                                            href="/legal/terms"
+                                            target="_blank"
+                                            className="text-foreground underline underline-offset-4 hover:text-[#AA141E]"
+                                        >
+                                            Пользовательского соглашения
+                                        </Link>
+                                        .
+                                    </Label>
+                                </div>
+
+                                {/* Политика конфиденциальности */}
+                                <p className="text-xs leading-relaxed text-muted-foreground">
+                                    Ознакомьтесь также с{' '}
                                     <Link
                                         href="/legal/privacy"
                                         target="_blank"
-                                        className="text-foreground underline underline-offset-4 transition-colors hover:text-primary"
-                                        onClick={(e) => e.stopPropagation()}
+                                        className="text-foreground underline underline-offset-4 hover:text-[#AA141E]"
                                     >
                                         Политикой конфиденциальности
                                     </Link>
                                     .
-                                </Label>
+                                </p>
                             </div>
 
                             <button

@@ -105,11 +105,18 @@ class AuthenticatedSessionController extends Controller
      * @param EmailCodeRequest $request
      * @return JsonResponse
      */
+
     public function confirm(EmailCodeRequest $request): JsonResponse
     {
+        $data = $request->validated();
+
         $result = $this->toyRegistrationService->confirm(
-            $request->validated('email'),
-            $request->validated('code')
+            $data['email'],
+            $data['code'],
+            $data['personal_data_consent'],
+            $data['terms_accepted'],
+            $request->ip(),
+            $request->userAgent()
         );
 
         if ($result['success']) {
@@ -126,6 +133,7 @@ class AuthenticatedSessionController extends Controller
             $result['status'] ?? 200
         );
     }
+
 
     /**
      * Отправка кода для входа по активированной игрушке.
