@@ -15,9 +15,11 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
-
+import { EditDropDialog } from '@/components/admin/drops/update-drop-dialog'
+import type { Skin } from '@/types'
 import {
     DropdownMenu,
+    DropdownMenuSeparator,
     // DropdownMenuContent,
     // DropdownMenuItem,
     // DropdownMenuSeparator,
@@ -34,20 +36,14 @@ import {
 } from '@/components/ui/table'
 
 import type { Drop } from '@/types/index'
+import { DropdownMenuContent } from '@radix-ui/react-dropdown-menu'
 
 type DropTableProps = {
     drops: Drop[]
-    // onEdit: (drop: Drop) => void
-    // onDelete: (drop: Drop) => void
-    // onRestore: (drop: Drop) => void
+    skins: Skin[]
 }
 
-export function DropTable({
-    drops,
-    // onEdit,
-    // onDelete,
-    // onRestore,
-}: DropTableProps) {
+export function DropTable({ drops, skins }: DropTableProps) {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
 
@@ -176,9 +172,7 @@ export function DropTable({
                                     <DropRow
                                         key={drop.id}
                                         drop={drop}
-                                    // onEdit={onEdit}
-                                    // onDelete={onDelete}
-                                    // onRestore={onRestore}
+                                        skins={skins}
                                     />
                                 ))
                             ) : (
@@ -215,14 +209,10 @@ export function DropTable({
 
 function DropRow({
     drop,
-    // onEdit,
-    // onDelete,
-    // onRestore,
+    skins,
 }: {
     drop: Drop
-    // onEdit: (drop: Drop) => void
-    // onDelete: (drop: Drop) => void
-    // onRestore: (drop: Drop) => void
+    skins: Skin[]
 }) {
     const isDeleted = Boolean(drop.deleted_at)
     const status = getDropStatus(drop)
@@ -351,36 +341,29 @@ function DropRow({
                         </Button>
                     </DropdownMenuTrigger>
 
-                    {/* <DropdownMenuContent align="end" className="w-48">
-                        {isDeleted ? (
-                            <DropdownMenuItem
-                                onSelect={() => onRestore(drop)}
-                            >
-                                Восстановить
-                            </DropdownMenuItem>
-                        ) : (
+                    <DropdownMenuContent align="end" className="w-52">
+                        {!isDeleted && (
                             <>
-                                <DropdownMenuItem
-                                    onSelect={() => onEdit(drop)}
-                                >
-                                    Редактировать
-                                </DropdownMenuItem>
+                                <EditDropDialog
+                                    drop={drop}
+                                    skins={skins}
+                                />
 
                                 <DropdownMenuSeparator />
 
-                                <DropdownMenuItem
-                                    onSelect={() => onDelete(drop)}
-                                    className="text-destructive focus:text-destructive"
-                                >
-                                    <Trash2 className="mr-2 size-4" />
-                                    Удалить
-                                </DropdownMenuItem>
+                                {/* Здесь позже подключим удаление */}
                             </>
                         )}
-                    </DropdownMenuContent> */}
+
+                        {isDeleted && (
+                            <>
+                                {/* Здесь позже подключим восстановление */}
+                            </>
+                        )}
+                    </DropdownMenuContent>
                 </DropdownMenu>
             </TableCell>
-        </TableRow>
+        </TableRow >
     )
 }
 

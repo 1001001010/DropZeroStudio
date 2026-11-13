@@ -38,6 +38,7 @@ export default function DropPage({
 
                 <DropTable
                     drops={drops}
+                    skins={skins}
                 />
             </div>
         </main>

@@ -29,7 +29,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { addDays } from "date-fns"
+import { format } from "date-fns"
 import { type DateRange } from "react-day-picker"
 import { Calendar } from "@/components/ui/calendar"
 
@@ -78,12 +78,46 @@ export default function StoreDropDialog({
         reset,
     } = useForm<DropFormData>(initialData)
 
+    const resetDropForm = () => {
+        reset()
+        setDateRangeProduction(undefined)
+        setDateRangeSale(undefined)
+    }
+
     // Закрытие и очистка формы.
     const handleClose = () => {
         if (processing) return
 
         setIsOpen(false)
-        reset()
+        resetDropForm()
+    }
+
+    const handleProductionRangeChange = (range: DateRange | undefined) => {
+        setDateRangeProduction(range)
+
+        setData('production_started_at', range?.from
+            ? format(range.from, 'yyyy-MM-dd')
+            : ''
+        )
+
+        setData('production_completed_at', range?.to
+            ? format(range.to, 'yyyy-MM-dd')
+            : ''
+        )
+    }
+
+    const handleSaleRangeChange = (range: DateRange | undefined) => {
+        setDateRangeSale(range)
+
+        setData('sale_started_at', range?.from
+            ? format(range.from, 'yyyy-MM-dd')
+            : ''
+        )
+
+        setData('sale_ended_at', range?.to
+            ? format(range.to, 'yyyy-MM-dd')
+            : ''
+        )
     }
 
     // Отправка формы.
@@ -107,7 +141,7 @@ export default function StoreDropDialog({
         setIsOpen(open)
 
         if (!open) {
-            reset()
+            resetDropForm()
         }
     }
 
@@ -115,18 +149,18 @@ export default function StoreDropDialog({
         data.skin_id &&
         data.name.trim() &&
         data.edition_size &&
-        data.price !== '',
+        data.price !== '' &&
+        data.production_started_at &&
+        data.production_completed_at &&
+        data.sale_started_at &&
+        data.sale_ended_at
     )
 
-    const [dateRangeProduction, setDateRangeProduction] = React.useState<DateRange | undefined>({
-        from: new Date(new Date().getFullYear(), 0, 12),
-        to: addDays(new Date(new Date().getFullYear(), 0, 12), 30),
-    })
+    const [dateRangeProduction, setDateRangeProduction] =
+        useState<DateRange | undefined>()
 
-    const [dateRangeSale, setDateRangeSale] = React.useState<DateRange | undefined>({
-        from: new Date(new Date().getFullYear(), 0, 12),
-        to: addDays(new Date(new Date().getFullYear(), 0, 12), 30),
-    })
+    const [dateRangeSale, setDateRangeSale] =
+        useState<DateRange | undefined>()
 
     return (
         <Dialog
@@ -296,11 +330,11 @@ export default function StoreDropDialog({
 
                         <Calendar
                             mode="range"
-                            defaultMonth={dateRangeProduction?.from}
+                            defaultMonth={new Date()}
                             selected={dateRangeProduction}
-                            onSelect={setDateRangeProduction}
+                            onSelect={handleProductionRangeChange}
                             numberOfMonths={2}
-                            className="rounded-lg border w-full"
+                            className="w-full rounded-lg border"
                         />
                     </section>
 
@@ -318,11 +352,11 @@ export default function StoreDropDialog({
 
                         <Calendar
                             mode="range"
-                            defaultMonth={dateRangeSale?.from}
+                            defaultMonth={new Date()}
                             selected={dateRangeSale}
-                            onSelect={setDateRangeSale}
+                            onSelect={handleSaleRangeChange}
                             numberOfMonths={2}
-                            className="rounded-lg border w-full"
+                            className="w-full rounded-lg border"
                         />
                     </section>
 

@@ -65,7 +65,11 @@ class DropController extends Controller
      */
     public function store(StoreDropRequest $request)
     {
-        //
+        Drop::create($request->validated());
+
+        return redirect()
+            ->back()
+            ->with('success', 'Дроп успешно создан.');
     }
 
     /**
@@ -89,7 +93,9 @@ class DropController extends Controller
      */
     public function update(UpdateDropRequest $request, Drop $drop)
     {
-        //
+        $drop->update($request->validated());
+
+        return back()->with('success', 'Дроп успешно обновлён.');
     }
 
     /**
