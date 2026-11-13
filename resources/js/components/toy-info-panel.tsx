@@ -1,10 +1,7 @@
-import { Heart, Shield, Star } from 'lucide-react'
-
 type ToyInfoPanelProps = {
     code: string
     name: string
     series: string
-    rarity: string
     edition: string
     purchaseDate: string
     material: string
@@ -18,22 +15,14 @@ export function ToyInfoPanel({
     code,
     name,
     series,
-    rarity,
     edition,
     purchaseDate,
-    material,
-    height,
-    weight,
-    artist,
     authenticity,
 }: ToyInfoPanelProps) {
     const specs = [
-        { label: 'Эдишн', value: edition },
+        { label: 'Экземпляр', value: edition },
         { label: 'Серия', value: series },
-        { label: 'Материал', value: material },
-        { label: 'Высота', value: height },
-        { label: 'Вес', value: weight },
-        { label: 'Скульптор', value: artist },
+        { label: 'Материал', value: 'Плюш' },
         { label: 'Куплено', value: purchaseDate },
         { label: 'Подлинность', value: authenticity },
     ]
@@ -43,9 +32,6 @@ export function ToyInfoPanel({
             <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                     <span className="border border-primary px-2 py-1 font-mono text-[10px] uppercase tracking-[0.24em] text-primary">
-                        {rarity}
-                    </span>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
                         {code}
                     </span>
                 </div>
@@ -73,22 +59,6 @@ export function ToyInfoPanel({
                     </div>
                 ))}
             </dl>
-
-            <div className="flex flex-wrap items-center gap-6">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Star className="h-4 w-4 text-primary" />
-                    <span className="font-mono text-foreground">4.9</span>
-                    <span className="font-mono">/5</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Shield className="h-4 w-4 text-primary" />
-                    <span>Оригинал</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Heart className="h-4 w-4 text-primary" />
-                    <span className="font-mono text-foreground">2.4k</span>
-                </div>
-            </div>
         </div>
     )
 }

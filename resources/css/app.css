@@ -62,9 +62,6 @@
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
   looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
 */
 @layer base {
 
@@ -111,8 +108,7 @@
     --sidebar-accent-foreground: hsl(0, 0%, 30%);
     --sidebar-border: hsl(0, 0%, 91%);
     --sidebar-ring: hsl(217.2, 91.2%, 59.8%);
-    --sidebar:
-        hsl(0 0% 98%);
+    --sidebar: hsl(0 0% 98%);
 }
 
 .dark {
@@ -148,8 +144,7 @@
     --sidebar-accent-foreground: hsl(240, 4.8%, 95.9%);
     --sidebar-border: hsl(0, 0%, 15.9%);
     --sidebar-ring: hsl(217.2, 91.2%, 59.8%);
-    --sidebar:
-        hsl(240 5.9% 10%);
+    --sidebar: hsl(240 5.9% 10%);
 }
 
 @layer base {
@@ -170,24 +165,15 @@ html {
   ---break---
 */
 @theme inline {
-    --color-sidebar:
-        var(--sidebar);
-    --color-sidebar-foreground:
-        var(--sidebar-foreground);
-    --color-sidebar-primary:
-        var(--sidebar-primary);
-    --color-sidebar-primary-foreground:
-        var(--sidebar-primary-foreground);
-    --color-sidebar-accent:
-        var(--sidebar-accent);
-    --color-sidebar-accent-foreground:
-        var(--sidebar-accent-foreground);
-    --color-sidebar-border:
-        var(--sidebar-border);
-    --color-sidebar-ring:
-        var(--sidebar-ring);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
 }
-
 
 .expend-h {
     min-height: calc(100vh - 96px);
@@ -210,6 +196,9 @@ html {
     border-radius: 20px;
 }
 
+/* =========================================
+   LEGAL MARKDOWN
+========================================= */
 
 .legal-markdown h3 {
     margin-top: 1.75rem;
@@ -329,7 +318,6 @@ html {
 
 .profile-chip span:first-child {
     display: grid;
-    size: 28px;
     width: 28px;
     height: 28px;
     place-items: center;
@@ -434,6 +422,13 @@ html {
         transform .7s cubic-bezier(.2, .75, .2, 1),
         opacity .6s ease,
         filter .6s ease;
+}
+
+.figure-card img,
+.figure-card canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .figure-card img {
@@ -635,9 +630,7 @@ html {
     .drop-stat {
         min-width: 40%;
     }
-}
 
-@media (max-width: 767px) {
     .toy-page {
         min-height: 100svh;
     }
@@ -683,5 +676,41 @@ html {
         animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: .01ms !important;
+    }
+}
+
+/* =========================================
+   DROPZERO — FIGURE SIZES
+========================================= */
+
+/* Одна фигурка */
+.figure-card.figure-single {
+    width: min(96%, 580px) !important;
+    height: min(100%, 680px) !important;
+
+    top: 50% !important;
+    left: 50% !important;
+
+    transform: translate(-50%, -50%) scale(1) !important;
+
+    opacity: 1 !important;
+    visibility: visible !important;
+    filter: none !important;
+
+    z-index: 5 !important;
+    pointer-events: auto !important;
+}
+
+/* Фигурки в карусели */
+.figure-card.figure-next,
+.figure-card.figure-previous {
+    width: min(82%, 480px);
+}
+
+/* Мобильные устройства */
+@media (max-width: 767px) {
+    .figure-card.figure-single {
+        width: min(98%, 440px) !important;
+        height: min(100%, 540px) !important;
     }
 }

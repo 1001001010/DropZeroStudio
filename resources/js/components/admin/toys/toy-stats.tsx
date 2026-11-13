@@ -33,7 +33,7 @@ export function ToyStats({
             />
 
             <StatCard
-                title="Изготовлено"
+                title="Изготавливается"
                 value={produced.toLocaleString('ru-RU')}
                 description="Прошли этап производства"
                 icon={<Factory className="size-5 text-orange-500" />}
@@ -41,7 +41,7 @@ export function ToyStats({
             />
 
             <StatCard
-                title="Доступно"
+                title="В продаже"
                 value={available.toLocaleString('ru-RU')}
                 description="Ожидают активации"
                 icon={<ShoppingBag className="size-5 text-emerald-500" />}

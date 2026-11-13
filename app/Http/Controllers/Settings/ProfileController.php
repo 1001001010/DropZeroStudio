@@ -17,16 +17,28 @@ class ProfileController extends Controller
 
     public function profile(string $code)
     {
-        $toy = Toy::where('code', $code)
+        $toys = Toy::query()
+            ->with(['drop.skin'])
             ->where('user_id', Auth::id())
-            ->first();
+            ->get();
 
-        if (!$toy) {
+        $currentToy = $toys->firstWhere('code', $code);
+
+        if (!$currentToy) {
             abort(404, 'Игрушка не найдена или она вам не принадлежит');
         }
 
+        // Игрушка, по коду которой вошёл пользователь,
+        // всегда будет первой в карусели.
+        $toys = collect([$currentToy])
+            ->concat(
+                $toys->reject(fn($toy) => $toy->id === $currentToy->id)
+            )
+            ->values();
+
         return Inertia::render('profile', [
-            'toy' => $toy,
+            'toys' => $toys,
+            'activeToyCode' => $currentToy->code,
         ]);
     }
 

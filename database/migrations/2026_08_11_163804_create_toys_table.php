@@ -24,7 +24,7 @@ return new class extends Migration {
             $table->string('secret_hash');
             $table->unsignedInteger('number');
             $table->enum('status', [
-                'produced', // изготовлена
+                'produced', // изготавливается
                 'available', // доступна для покупки
                 'sold', // продана
             ])->default('produced');

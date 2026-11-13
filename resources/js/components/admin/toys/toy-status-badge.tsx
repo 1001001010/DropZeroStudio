@@ -9,11 +9,11 @@ const variants: Record<
     { label: string; className: string }
 > = {
     produced: {
-        label: 'Изготовлена',
+        label: 'Изготавливается',
         className: 'bg-orange-500/10 text-orange-500',
     },
     available: {
-        label: 'Доступна',
+        label: 'В продаже',
         className: 'bg-emerald-500/10 text-emerald-500',
     },
     sold: {

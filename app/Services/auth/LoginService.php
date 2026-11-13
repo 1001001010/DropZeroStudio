@@ -420,6 +420,7 @@ class LoginService
         $toy->update([
             'user_id' => $user->id,
             'claimed_at' => now(),
+            'status' => 'sold',
         ]);
     }
 

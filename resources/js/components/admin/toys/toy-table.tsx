@@ -215,11 +215,11 @@ export function ToyTable({
                                         </SelectItem>
 
                                         <SelectItem value="produced">
-                                            Изготовлена
+                                            Изготавливается
                                         </SelectItem>
 
                                         <SelectItem value="available">
-                                            Доступна
+                                            В продаже
                                         </SelectItem>
 
                                         <SelectItem value="sold">
