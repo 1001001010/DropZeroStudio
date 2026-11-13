@@ -51,12 +51,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     });
 
-    Route::controller(ToyController::class)->prefix('toys')->name('toys.')->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::post('/', 'store')->name('store');
-        Route::put('/{toy}', 'update')->name('update');
-        Route::delete('/{toy}', 'destroy')->name('destroy');
-    });
+
+
+    Route::controller(ToyController::class)
+        ->prefix('toys')
+        ->name('toys.')
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::delete('/{toy}', 'destroy')->name('destroy');
+            Route::post('/{toy}/restore', 'restore')->withTrashed()->name('restore');
+        });
 
 });
 
