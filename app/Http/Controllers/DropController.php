@@ -8,7 +8,10 @@ use App\Models\Drop;
 use App\Models\Skin;
 use Inertia\{Inertia};
 use Illuminate\Support\Facades\DB;
-
+use App\Services\ToyCredentialGenerator;
+use Illuminate\Support\Facades\Hash;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
 
 class DropController extends Controller
 {
@@ -63,14 +66,66 @@ class DropController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreDropRequest $request)
-    {
-        Drop::create($request->validated());
+
+    public function store(
+        StoreDropRequest $request,
+        ToyCredentialGenerator $generator
+    ) {
+        $data = $request->validated();
+
+        // Секреты будут существовать только в памяти во время создания.
+        $generatedToys = [];
+
+        $drop = DB::transaction(function () use ($data, $generator, &$generatedToys) {
+            $drop = Drop::create($data);
+
+            for ($number = 1; $number <= $drop->edition_size; $number++) {
+                $code = $generator->generateCode();
+                $secret = $generator->generateSecret();
+
+                $drop->toys()->create([
+                    'code' => $code,
+                    'secret_hash' => Hash::make($secret),
+                    'number' => $number,
+                    'status' => 'produced',
+                ]);
+
+                $generatedToys[] = [
+                    'number' => $number,
+                    'code' => $code,
+                    'secret' => $secret,
+                ];
+            }
+
+            return $drop;
+        });
+
+        try {
+            // Формируем PDF после успешного сохранения дропа и игрушек.
+            $pdf = Pdf::loadView('pdf.toy-cards', [
+                'toys' => $generatedToys,
+                'editionSize' => $drop->edition_size,
+            ])->setPaper('a4');
+
+            $path = "private/drop-cards/drop-{$drop->id}.pdf";
+
+            Storage::disk('local')->put($path, $pdf->output());
+
+        } catch (\Throwable $exception) {
+            // Не оставляем дроп без созданного файла карточек.
+            DB::transaction(function () use ($drop) {
+                $drop->toys()->forceDelete();
+                $drop->forceDelete();
+            });
+
+            throw $exception;
+        }
 
         return redirect()
             ->back()
-            ->with('success', 'Дроп успешно создан.');
+            ->with('success', "Дроп создан. Игрушек: {$drop->edition_size}. Карточки сохранены.");
     }
+
 
     /**
      * Display the specified resource.

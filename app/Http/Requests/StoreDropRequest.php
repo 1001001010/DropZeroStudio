@@ -31,6 +31,7 @@ class StoreDropRequest extends FormRequest
                 'required',
                 'integer',
                 'min:1',
+                'max:10000',
             ],
 
             'price' => [
