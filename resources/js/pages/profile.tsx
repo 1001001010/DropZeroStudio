@@ -1,11 +1,12 @@
 import { ToyNav } from '@/components/toy-nav'
-import { ToyInfoPanel } from '@/components/toy-info-panel'
+// import { ToyInfoPanel } from '@/components/toy-info-panel'
 import { PreorderPanel } from '@/components/preorder-panel'
-import { lazy } from 'react'
+import { CharacterCarousel } from '@/components/character-carousel'
+// import { lazy } from 'react'
 
-const Figure3D = lazy(() =>
-    import('@/components/figure-3d').then((m) => ({ default: m.Figure3D })),
-)
+// const Figure3D = lazy(() =>
+//     import('@/components/figure-3d').then((m) => ({ default: m.Figure3D })),
+// )
 
 const toy = {
     code: 'DZ-014',
@@ -28,33 +29,11 @@ const toy = {
 
 export default function ToyPage() {
     return (
-        <main className="min-h-dvh bg-background text-foreground">
+        <main className="min-h-dvh bg-[#050505] text-white">
             <ToyNav />
 
-            <div className="mx-auto flex max-w-6xl flex-col gap-16 px-5 py-12 md:py-20">
-                <div className="flex flex-col gap-12 lg:flex-row lg:gap-16">
-                    <div className="flex-1 lg:sticky lg:top-24 lg:self-start">
-                        <div className="h-[500px] w-full lg:h-[650px]">
-                            <Figure3D />
-                        </div>
-                    </div>
-
-                    <div className="flex-1 lg:max-w-md">
-                        <ToyInfoPanel
-                            code={toy.code}
-                            name={toy.name}
-                            series={toy.series}
-                            rarity={toy.rarity}
-                            edition={`${toy.number} / ${toy.slots}`}
-                            purchaseDate={toy.purchaseDate}
-                            material={toy.material}
-                            height={toy.height}
-                            weight={toy.weight}
-                            artist={toy.artist}
-                            authenticity={toy.authenticity}
-                        />
-                    </div>
-                </div>
+            <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-12 px-4 py-8 md:px-8 md:py-12">
+                <CharacterCarousel />
 
                 <PreorderPanel
                     dropName={`${toy.series} Wave 2`}

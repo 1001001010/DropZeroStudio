@@ -1,6 +1,6 @@
 'use client'
 
-import { Component, Suspense, useMemo, useRef, type ReactNode } from 'react'
+import { Component, Suspense, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import {
     ContactShadows,
@@ -18,7 +18,10 @@ import { Spinner } from "@/components/ui/spinner"
  * (в Laravel + Inertia — тоже `public/models/Model.glb`).
  * Меняешь только эту строку, если имя/путь другие.
  */
-const MODEL_URL = '/models/Model.glb'
+const MODEL_URLS = [
+    '/models/Model.glb',
+    '/models/Model2.glb',
+]
 
 /**
  * Загрузка реального .glb: клонирует сцену, авто-центрирует и
@@ -27,7 +30,12 @@ const MODEL_URL = '/models/Model.glb'
  */
 function GLBModel() {
     const group = useRef<Group>(null)
-    const { scene } = useGLTF(MODEL_URL)
+
+    const [modelUrl] = useState(() =>
+        MODEL_URLS[Math.floor(Math.random() * MODEL_URLS.length)]
+    )
+
+    const { scene } = useGLTF(modelUrl)
 
     const { object, offset, scale } = useMemo(() => {
         const object = scene.clone(true)
