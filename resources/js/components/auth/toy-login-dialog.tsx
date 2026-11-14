@@ -1,6 +1,10 @@
-"use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from 'react'
+import {
+    Mail,
+    RefreshCw,
+    ShieldCheck,
+} from 'lucide-react'
 
 import {
     Dialog,
@@ -8,21 +12,41 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog'
 
-import { Input } from "@/components/ui/input"
+import { EmailCodeInput } from '@/components/auth/email-code-input'
+import { useEmailCode } from '@/hooks/auth/use-email-code'
 
-import {
-    Mail,
-    ShieldCheck,
-    RefreshCw,
-} from "lucide-react"
+import type { ToyLoginDialogProps } from '@/types/index.d'
 
-type ToyLoginDialogProps = {
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    toyCode: string
-    onComplete?: () => void
+/**
+ * Получает CSRF-токен Laravel из meta-тега страницы.
+ */
+function getCsrfToken(): string {
+    return (
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? ''
+    )
+}
+
+/**
+ * Безопасно извлекает сообщение об ошибке из ответа API.
+ */
+function getErrorMessage(
+    data: unknown,
+    fallback: string,
+): string {
+    if (
+        typeof data === 'object' &&
+        data !== null &&
+        'message' in data &&
+        typeof data.message === 'string'
+    ) {
+        return data.message
+    }
+
+    return fallback
 }
 
 export function ToyLoginDialog({
@@ -31,202 +55,68 @@ export function ToyLoginDialog({
     toyCode,
     onComplete,
 }: ToyLoginDialogProps) {
-    const [verificationCode, setVerificationCode] = useState([
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-    ])
-
-    const [error, setError] = useState("")
+    const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
-    const [seconds, setSeconds] = useState(300)
 
-    const codeRefs = useRef<(HTMLInputElement | null)[]>([])
+    // Используем общую логику шестизначного кода и таймера.
+    const emailCode = useEmailCode({
+        enabled: open,
+    })
 
+    /**
+     * Сбрасываем состояние при открытии и закрытии диалога.
+     */
     useEffect(() => {
-        if (!open) {
-            setVerificationCode([
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-            ])
-
-            setError("")
+        if (open) {
+            emailCode.resetCode()
+            setError('')
             setIsLoading(false)
-            setSeconds(300)
+            return
         }
+
+        setError('')
+        setIsLoading(false)
+
+        // resetCode намеренно вызывается только при изменении open.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open])
 
-    useEffect(() => {
-        if (!open || seconds <= 0) {
-            return
-        }
-
-        const timer = setInterval(() => {
-            setSeconds((value) => value - 1)
-        }, 1000)
-
-        return () => {
-            clearInterval(timer)
-        }
-    }, [open, seconds])
-
-    useEffect(() => {
-        if (!open) {
-            return
-        }
-
-        const timer = setTimeout(() => {
-            codeRefs.current[0]?.focus()
-        }, 100)
-
-        return () => {
-            clearTimeout(timer)
-        }
-    }, [open])
-
-    const formattedTime = `${Math.floor(seconds / 60)
-        .toString()
-        .padStart(2, "0")}:${(seconds % 60)
-            .toString()
-            .padStart(2, "0")}`
-
-    function getCsrfToken() {
-        return (
-            document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute("content") ?? ""
-        )
-    }
-
-    function handleCodeChange(
-        index: number,
-        value: string,
-    ) {
-        const digit = value
-            .replace(/\D/g, "")
-            .slice(-1)
-
-        const next = [...verificationCode]
-
-        next[index] = digit
-
-        setVerificationCode(next)
-        setError("")
-
-        if (digit && index < 5) {
-            codeRefs.current[index + 1]?.focus()
-        }
-    }
-
-    function handleCodeKeyDown(
-        event: React.KeyboardEvent<HTMLInputElement>,
-        index: number,
-    ) {
-        if (event.key === "Backspace") {
-            if (!verificationCode[index] && index > 0) {
-                codeRefs.current[index - 1]?.focus()
-            }
-
-            return
-        }
-
-        if (
-            event.key === "ArrowLeft" &&
-            index > 0
-        ) {
-            event.preventDefault()
-
-            codeRefs.current[index - 1]?.focus()
-        }
-
-        if (
-            event.key === "ArrowRight" &&
-            index < 5
-        ) {
-            event.preventDefault()
-
-            codeRefs.current[index + 1]?.focus()
-        }
-    }
-
-    function handleCodePaste(
-        event: React.ClipboardEvent<HTMLInputElement>,
-    ) {
-        event.preventDefault()
-
-        const value = event.clipboardData
-            .getData("text")
-            .replace(/\D/g, "")
-            .slice(0, 6)
-
-        if (!value) {
-            return
-        }
-
-        const next = [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-        ]
-
-        value.split("").forEach((digit, index) => {
-            next[index] = digit
-        })
-
-        setVerificationCode(next)
-        setError("")
-
-        const nextIndex = Math.min(value.length, 5)
-
-        setTimeout(() => {
-            codeRefs.current[nextIndex]?.focus()
-        }, 0)
-    }
-
+    /**
+     * Подтверждает вход с помощью шестизначного email-кода.
+     */
     async function handleVerify() {
-        const code = verificationCode.join("")
-
-        if (code.length !== 6) {
-            setError("Введите код полностью")
+        if (!emailCode.isComplete) {
+            setError('Введите код полностью')
             return
         }
 
-        setError("")
+        setError('')
         setIsLoading(true)
 
         try {
-            const response = await fetch(
-                "/auth/login/confirm",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-                        "X-CSRF-TOKEN": getCsrfToken(),
-                    },
-                    body: JSON.stringify({
-                        toy_code: toyCode,
-                        code,
-                    }),
+            const response = await fetch('/auth/login/confirm', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getCsrfToken(),
                 },
-            )
+                body: JSON.stringify({
+                    toy_code: toyCode,
+                    code: emailCode.codeValue,
+                }),
+            })
 
-            const data = await response.json()
+            const data: unknown = await response.json().catch(() => null)
 
             if (!response.ok) {
                 setError(
-                    data.message ??
-                    "Неверный код подтверждения",
+                    getErrorMessage(
+                        data,
+                        'Неверный код подтверждения',
+                    ),
                 )
 
                 return
@@ -236,69 +126,79 @@ export function ToyLoginDialog({
             onOpenChange(false)
         } catch {
             setError(
-                "Не удалось проверить код. Попробуйте ещё раз.",
+                'Не удалось проверить код. Попробуйте ещё раз.',
             )
         } finally {
             setIsLoading(false)
         }
     }
 
+    /**
+     * Повторно отправляет код подтверждения на email владельца.
+     */
     async function handleResend() {
-        if (seconds > 0 || isLoading) {
+        if (emailCode.seconds > 0 || isLoading) {
             return
         }
 
-        setError("")
+        setError('')
         setIsLoading(true)
 
         try {
-            const response = await fetch(
-                "/auth/login",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-                        "X-CSRF-TOKEN": getCsrfToken(),
-                    },
-                    body: JSON.stringify({
-                        toy_code: toyCode,
-                    }),
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getCsrfToken(),
                 },
-            )
+                body: JSON.stringify({
+                    toy_code: toyCode,
+                }),
+            })
 
-            const data = await response.json()
+            const data: unknown = await response.json().catch(() => null)
 
             if (!response.ok) {
                 setError(
-                    data.message ??
-                    "Не удалось отправить код",
+                    getErrorMessage(
+                        data,
+                        'Не удалось отправить код',
+                    ),
                 )
 
                 return
             }
 
-            setSeconds(300)
-
-            setVerificationCode([
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-            ])
-
-            setTimeout(() => {
-                codeRefs.current[0]?.focus()
-            }, 100)
+            // Очищаем предыдущий код и запускаем таймер заново.
+            emailCode.resetCode()
         } catch {
             setError(
-                "Не удалось отправить код. Попробуйте ещё раз.",
+                'Не удалось отправить код. Попробуйте ещё раз.',
             )
         } finally {
             setIsLoading(false)
         }
+    }
+
+    /**
+     * Обновляет введённую цифру и очищает предыдущую ошибку.
+     */
+    function handleCodeChange(index: number, value: string) {
+        emailCode.handleChange(index, value)
+        setError('')
+    }
+
+    /**
+     * Обрабатывает вставку полного кода из буфера обмена.
+     */
+    function handleCodePaste(
+        event: React.ClipboardEvent<HTMLInputElement>,
+    ) {
+        emailCode.handlePaste(event)
+        setError('')
     }
 
     return (
@@ -318,6 +218,7 @@ export function ToyLoginDialog({
                     shadow-2xl
                 "
             >
+                {/* Верхняя декоративная линия */}
                 <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
 
                 <div className="px-6 pb-6 pt-6 sm:px-7">
@@ -386,13 +287,14 @@ export function ToyLoginDialog({
                         </div>
                     </DialogHeader>
 
+                    {/* Индикатор этапов */}
                     <div className="my-6 flex items-center gap-2">
                         <div className="h-1 flex-1 rounded-full bg-primary" />
-
                         <div className="h-1 flex-1 rounded-full bg-primary" />
                     </div>
 
                     <div className="space-y-6">
+                        {/* Иконка подтверждения */}
                         <div className="flex justify-center">
                             <div
                                 className="
@@ -413,84 +315,34 @@ export function ToyLoginDialog({
                             </div>
                         </div>
 
-                        <div className="flex justify-center gap-2">
-                            {verificationCode.map(
-                                (digit, index) => (
-                                    <Input
-                                        key={index}
-                                        ref={(element) => {
-                                            codeRefs.current[index] =
-                                                element
-                                        }}
-                                        type="text"
-                                        inputMode="numeric"
-                                        autoComplete={
-                                            index === 0
-                                                ? "one-time-code"
-                                                : "off"
-                                        }
-                                        maxLength={1}
-                                        value={digit}
-                                        onChange={(event) =>
-                                            handleCodeChange(
-                                                index,
-                                                event.target.value,
-                                            )
-                                        }
-                                        onKeyDown={(event) =>
-                                            handleCodeKeyDown(
-                                                event,
-                                                index,
-                                            )
-                                        }
-                                        onPaste={
-                                            index === 0
-                                                ? handleCodePaste
-                                                : undefined
-                                        }
-                                        className="
-                                            h-12
-                                            w-10
-                                            rounded-md
-                                            border-border
-                                            bg-background
-                                            p-0
-                                            text-center
-                                            font-mono
-                                            text-xl
-                                            font-medium
-                                            caret-primary
-                                            transition-all
-                                            focus:border-primary
-                                            focus:bg-background
-                                            focus:ring-2
-                                            focus:ring-primary/20
-                                            sm:h-14
-                                            sm:w-12
-                                        "
-                                        aria-label={`Цифра ${index + 1
-                                            }`}
-                                    />
-                                ),
-                            )}
-                        </div>
+                        {/* Шестизначный код */}
+                        <EmailCodeInput
+                            code={emailCode.code}
+                            disabled={isLoading}
+                            setInputRef={emailCode.setInputRef}
+                            onChange={handleCodeChange}
+                            onKeyDown={emailCode.handleKeyDown}
+                            onPaste={handleCodePaste}
+                        />
 
+                        {/* Сообщение об ошибке */}
                         {error && (
                             <p
+                                role="alert"
                                 className="
                                     text-center
                                     font-mono
                                     text-xs
                                     text-destructive
                                 "
-                                role="alert"
                             >
                                 {error}
                             </p>
                         )}
 
+                        {/* Таймер и повторная отправка */}
                         <div className="text-center">
-                            {seconds > 0 ? (
+                            {emailCode.seconds > 0 ? (
                                 <p
                                     className="
                                         font-mono
@@ -498,9 +350,9 @@ export function ToyLoginDialog({
                                         text-muted-foreground
                                     "
                                 >
-                                    Код действителен{" "}
+                                    Код действителен{' '}
                                     <span className="text-foreground">
-                                        {formattedTime}
+                                        {emailCode.formattedTime}
                                     </span>
                                 </p>
                             ) : (
@@ -528,14 +380,11 @@ export function ToyLoginDialog({
                             )}
                         </div>
 
+                        {/* Подтверждение входа */}
                         <button
                             type="button"
                             onClick={handleVerify}
-                            disabled={
-                                verificationCode.some(
-                                    (digit) => !digit,
-                                ) || isLoading
-                            }
+                            disabled={!emailCode.isComplete || isLoading}
                             className="
                                 flex
                                 h-12

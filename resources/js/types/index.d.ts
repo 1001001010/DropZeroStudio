@@ -1,5 +1,10 @@
 
 import type { LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
+import type {
+    ClipboardEvent,
+    KeyboardEvent,
+} from 'react'
 
 // =============================================================================
 // Shared / Application
@@ -10,8 +15,6 @@ export interface Flash {
     error?: string
     mode?: AuthMode
 }
-
-export type AuthMode = 'registration' | 'login'
 
 export interface Auth {
     user: User | null
@@ -26,9 +29,6 @@ export interface User {
     updated_at: string
 }
 
-/**
- * Общие данные, передаваемые Inertia на страницы приложения.
- */
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
@@ -51,23 +51,73 @@ export interface SharedData {
 // Authentication
 // =============================================================================
 
+export type AuthMode = 'registration' | 'login'
+
+import type {
+    ClipboardEvent,
+    KeyboardEvent,
+} from 'react'
+
+export interface ToyCodeInputProps {
+    prefix: ToyCodePrefix
+    digits: ToyCodeDigits
+    error: string
+    disabled?: boolean
+    setInputRef: (
+        index: number,
+        element: HTMLInputElement | null,
+    ) => void
+    onPrefixChange: (index: number, value: string) => void
+    onDigitChange: (index: number, value: string) => void
+    onKeyDown: (
+        event: KeyboardEvent<HTMLInputElement>,
+        index: number,
+    ) => void
+    onPaste: (event: ClipboardEvent<HTMLInputElement>) => void
+}
+
 /**
  * Код фигурки в формате XX-000.
  */
 export type ToyCode = string
 
 /**
- * Ответ сервера при проверке кода фигурки.
+ * Символы кода фигурки.
  */
-export interface ToyCodeResponse {
-    mode: AuthMode
+export type ToyCodePrefix = [string, string]
+export type ToyCodeDigits = [string, string, string]
+
+/**
+ * Состояние полей ввода кода фигурки.
+ */
+export interface ToyCodeInput {
+    prefix: ToyCodePrefix
+    digits: ToyCodeDigits
 }
 
 /**
- * Props страницы регистрации и авторизации.
+ * Успешный ответ при проверке кода фигурки.
  */
-export interface RegisterPageProps {
-    [key: string]: unknown
+export interface ToyCodeResponse {
+    success: true
+    mode: AuthMode
+    message?: string
+}
+
+/**
+ * Ошибка API.
+ */
+export interface ApiErrorResponse {
+    success?: false
+    message: string
+}
+
+/**
+ * Общий успешный ответ API.
+ */
+export interface ApiSuccessResponse {
+    success: true
+    message?: string
 }
 
 // =============================================================================
@@ -272,4 +322,62 @@ export interface LegalSection {
 export interface LegalDocumentData {
     metadata: LegalMetadata
     sections: LegalSection[]
+}
+
+export interface AuthCardProps {
+    title?: string
+    description?: string
+    children: ReactNode
+    className?: string
+}
+
+
+/**
+ * Шестизначный код подтверждения email.
+ */
+export type EmailVerificationCode = [
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+]
+
+/**
+ * Props компонента ввода шестизначного email-кода.
+ */
+export interface EmailCodeInputProps {
+    code: EmailVerificationCode
+    disabled?: boolean
+    setInputRef: (
+        index: number,
+        element: HTMLInputElement | null,
+    ) => void
+    onChange: (index: number, value: string) => void
+    onKeyDown: (
+        event: KeyboardEvent<HTMLInputElement>,
+        index: number,
+    ) => void
+    onPaste: (event: ClipboardEvent<HTMLInputElement>) => void
+}
+
+/**
+ * Props диалога регистрации владельца фигурки.
+ */
+export interface RegistrationDialogProps {
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    toyCode: ToyCode
+    onComplete?: () => void
+}
+
+/**
+ * Props диалога входа владельца фигурки.
+ */
+export interface ToyLoginDialogProps {
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    toyCode: ToyCode
+    onComplete?: () => void
 }

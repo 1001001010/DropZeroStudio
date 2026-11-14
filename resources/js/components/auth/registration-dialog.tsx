@@ -1,24 +1,56 @@
-"use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from 'react'
+import {
+    ArrowRight,
+    KeyRound,
+    Mail,
+    RefreshCw,
+    ShieldCheck,
+} from 'lucide-react'
+import { Link } from '@inertiajs/react'
+
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Link } from "@inertiajs/react"
-import { Mail, KeyRound, ArrowRight, ShieldCheck, RefreshCw } from "lucide-react"
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 
-type RegistrationDialogProps = {
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    toyCode: string
-    onComplete?: () => void
+import { EmailCodeInput } from '@/components/auth/email-code-input'
+import { useEmailCode } from '@/hooks/auth/use-email-code'
+
+import type { RegistrationDialogProps } from '@/types/index.d'
+
+/**
+ * Возвращает CSRF-токен Laravel из meta-тега страницы.
+ */
+function getCsrfToken(): string {
+    return (
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? ''
+    )
+}
+
+/**
+ * Маскирует email, чтобы не показывать адрес полностью
+ * на экране подтверждения.
+ */
+function maskEmail(email: string): string {
+    const [name, domain] = email.split('@')
+
+    if (!name || !domain) {
+        return email
+    }
+
+    const visible = name.slice(0, Math.min(2, name.length))
+    const hidden = '*'.repeat(Math.max(2, name.length - visible.length))
+
+    return `${visible}${hidden}@${domain}`
 }
 
 export function RegistrationDialog({
@@ -29,88 +61,58 @@ export function RegistrationDialog({
 }: RegistrationDialogProps) {
     const [step, setStep] = useState<1 | 2>(1)
 
-    const [email, setEmail] = useState("")
-    const [secretKey, setSecretKey] = useState("")
+    const [email, setEmail] = useState('')
+    const [secretKey, setSecretKey] = useState('')
 
-    const [verificationCode, setVerificationCode] = useState([
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-    ])
-
-    const [error, setError] = useState("")
+    const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
-    const [seconds, setSeconds] = useState(300)
+
     const [personalDataConsent, setPersonalDataConsent] = useState(false)
     const [termsAccepted, setTermsAccepted] = useState(false)
 
-    const codeRefs = useRef<(HTMLInputElement | null)[]>([])
+    // Общая логика OTP-ввода и таймера вынесена в отдельный хук.
+    const emailCode = useEmailCode({
+        enabled: open && step === 2,
+    })
 
-    /*
-     * Сбрасываем Dialog при закрытии.
+    /**
+     * Сбрасываем состояние регистрации после закрытия диалога.
      */
     useEffect(() => {
-        if (!open) {
-            setStep(1)
-            setEmail("")
-            setSecretKey("")
-            setVerificationCode(["", "", "", "", "", ""])
-            setError("")
-            setIsLoading(false)
-            setSeconds(300)
-            setPersonalDataConsent(false)
-            setTermsAccepted(false)
+        if (open) {
+            return
         }
+
+        setStep(1)
+        setEmail('')
+        setSecretKey('')
+        setError('')
+        setIsLoading(false)
+        setPersonalDataConsent(false)
+        setTermsAccepted(false)
+        emailCode.resetCode()
     }, [open])
 
-    /*
-     * Таймер для кода из email.
-     */
-    useEffect(() => {
-        if (!open || step !== 2 || seconds <= 0) {
-            return
-        }
-
-        const timer = setInterval(() => {
-            setSeconds((value) => value - 1)
-        }, 1000)
-
-        return () => clearInterval(timer)
-    }, [open, step, seconds])
-
-    const formattedTime = `${Math.floor(seconds / 60)
-        .toString()
-        .padStart(2, "0")}:${(seconds % 60)
-            .toString()
-            .padStart(2, "0")}`
-
-    const csrfToken = document
-        .querySelector('meta[name="csrf-token"]')
-        ?.getAttribute('content')
-    /*
-     * Первый шаг:
-     * email + secret key.
-     *
-     * Здесь позже заменишь setTimeout на запрос к backend.
+    /**
+     * Первый шаг: проверка email, секретного ключа и согласий.
      */
     async function handleContinue() {
-        setError("")
+        setError('')
 
-        if (!email.trim()) {
-            setError("Введите email")
+        const normalizedEmail = email.trim()
+
+        if (!normalizedEmail) {
+            setError('Введите email')
             return
         }
 
-        if (!email.includes("@")) {
-            setError("Введите корректный email")
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            setError('Введите корректный email')
             return
         }
 
         if (!secretKey.trim()) {
-            setError("Введите секретный ключ")
+            setError('Введите секретный ключ')
             return
         }
 
@@ -119,196 +121,157 @@ export function RegistrationDialog({
             return
         }
 
-        if (!personalDataConsent) {
-            setError("Необходимо согласие на обработку персональных данных")
-            return
-        }
-
         setIsLoading(true)
 
         try {
             const response = await fetch('/auth/registration/verify', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken ?? '',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getCsrfToken(),
                 },
                 body: JSON.stringify({
                     toy_code: toyCode,
-                    email: email,
-                    secret_key: secretKey
-
+                    email: normalizedEmail,
+                    secret_key: secretKey,
                 }),
             })
 
-            const data = await response.json()
+            const data: unknown = await response.json().catch(() => null)
 
             if (!response.ok) {
-                setError(data.message ?? 'Произошла ошибка')
+                const message =
+                    typeof data === 'object' &&
+                        data !== null &&
+                        'message' in data &&
+                        typeof data.message === 'string'
+                        ? data.message
+                        : 'Произошла ошибка'
+
+                setError(message)
                 return
             }
 
-            await new Promise((resolve) => setTimeout(resolve, 700))
+            // Небольшая пауза сохраняет плавность перехода между шагами.
+            await new Promise((resolve) => window.setTimeout(resolve, 700))
 
+            setEmail(normalizedEmail)
+            emailCode.resetCode()
             setStep(2)
-            setSeconds(300)
-
-            setTimeout(() => {
-                codeRefs.current[0]?.focus()
-            }, 100)
         } catch {
-            setError("Не удалось отправить код. Попробуйте ещё раз.")
+            setError('Не удалось отправить код. Попробуйте ещё раз.')
         } finally {
             setIsLoading(false)
         }
     }
 
-    /*
-     * Ввод цифры email-кода.
-     */
-    function handleCodeChange(index: number, value: string) {
-        const digit = value.replace(/\D/g, "").slice(-1)
-
-        const next = [...verificationCode]
-        next[index] = digit
-
-        setVerificationCode(next)
-        setError("")
-
-        if (digit && index < 5) {
-            codeRefs.current[index + 1]?.focus()
-        }
-    }
-
-    /*
-     * Backspace + стрелки.
-     */
-    function handleCodeKeyDown(
-        e: React.KeyboardEvent<HTMLInputElement>,
-        index: number,
-    ) {
-        if (e.key === "Backspace") {
-            if (!verificationCode[index] && index > 0) {
-                codeRefs.current[index - 1]?.focus()
-            }
-
-            return
-        }
-
-        if (e.key === "ArrowLeft" && index > 0) {
-            codeRefs.current[index - 1]?.focus()
-        }
-
-        if (e.key === "ArrowRight" && index < 5) {
-            codeRefs.current[index + 1]?.focus()
-        }
-    }
-
-    /*
-     * Вставка сразу всего кода.
-     */
-    function handleCodePaste(
-        e: React.ClipboardEvent<HTMLInputElement>,
-    ) {
-        e.preventDefault()
-
-        const value = e.clipboardData
-            .getData("text")
-            .replace(/\D/g, "")
-            .slice(0, 6)
-
-        if (!value) {
-            return
-        }
-
-        const next = ["", "", "", "", "", ""]
-
-        value.split("").forEach((digit, index) => {
-            next[index] = digit
-        })
-
-        setVerificationCode(next)
-
-        const nextIndex = Math.min(value.length, 5)
-
-        setTimeout(() => {
-            codeRefs.current[nextIndex]?.focus()
-        }, 0)
-    }
-
-    /*
-     * Подтверждение email-кода.
+    /**
+     * Подтверждение email с помощью шестизначного кода.
      */
     async function handleVerify() {
-        const code = verificationCode.join("")
-
-        if (code.length !== 6) {
-            setError("Введите код полностью")
+        if (!emailCode.isComplete) {
+            setError('Введите код полностью')
             return
         }
 
-        setError("")
+        setError('')
         setIsLoading(true)
 
         try {
-            const response = await fetch("/auth/registration/confirm", {
-                method: "POST",
+            const response = await fetch('/auth/registration/confirm', {
+                method: 'POST',
+                credentials: 'same-origin',
                 headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "X-CSRF-TOKEN": csrfToken ?? "",
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getCsrfToken(),
                 },
                 body: JSON.stringify({
                     email,
-                    code: verificationCode.join(''),
+                    code: emailCode.codeValue,
                     personal_data_consent: personalDataConsent,
                     terms_accepted: termsAccepted,
                 }),
             })
 
-            const data = await response.json()
+            const data: unknown = await response.json().catch(() => null)
 
             if (!response.ok) {
-                setError(data.message ?? "Неверный код подтверждения")
+                const message =
+                    typeof data === 'object' &&
+                        data !== null &&
+                        'message' in data &&
+                        typeof data.message === 'string'
+                        ? data.message
+                        : 'Неверный код подтверждения'
+
+                setError(message)
                 return
             }
 
             onComplete?.()
             onOpenChange(false)
         } catch {
-            setError("Не удалось проверить код. Попробуйте ещё раз.")
+            setError('Не удалось проверить код. Попробуйте ещё раз.')
         } finally {
             setIsLoading(false)
         }
     }
 
-    /*
-     * Повторная отправка email.
+    /**
+     * Повторная отправка кода.
+     *
+     * Пока серверный маршрут для регистрации не определён,
+     * здесь сохранена прежняя временная имитация отправки.
      */
     async function handleResend() {
-        if (seconds > 0) {
+        if (emailCode.seconds > 0 || isLoading) {
             return
         }
 
-        setError("")
+        setError('')
         setIsLoading(true)
 
         try {
+            await new Promise((resolve) => window.setTimeout(resolve, 700))
 
-            await new Promise((resolve) => setTimeout(resolve, 700))
-
-            setSeconds(300)
-            setVerificationCode(["", "", "", "", "", ""])
-
-            setTimeout(() => {
-                codeRefs.current[0]?.focus()
-            }, 100)
+            emailCode.resetCode()
         } catch {
-            setError("Не удалось отправить код")
+            setError('Не удалось отправить код')
         } finally {
             setIsLoading(false)
         }
+    }
+
+    /**
+     * Обновляет OTP-код и очищает предыдущую ошибку.
+     */
+    function handleCodeChange(index: number, value: string) {
+        emailCode.handleChange(index, value)
+        setError('')
+    }
+
+    /**
+     * Вставляет OTP-код и очищает предыдущую ошибку.
+     */
+    function handleCodePaste(
+        event: React.ClipboardEvent<HTMLInputElement>,
+    ) {
+        emailCode.handlePaste(event)
+        setError('')
+    }
+
+    /**
+     * Возвращает пользователя к вводу email и секретного ключа.
+     */
+    function handleBack() {
+        setStep(1)
+        setError('')
+        emailCode.resetCode()
     }
 
     return (
@@ -316,7 +279,7 @@ export function RegistrationDialog({
             <DialogContent
                 className="
                     w-[calc(100%-2rem)]
-                    max-w-xl
+                    max-w-md
                     overflow-hidden
                     rounded-xl
                     border-border
@@ -364,13 +327,13 @@ export function RegistrationDialog({
                         <div>
                             <DialogTitle className="font-mono text-xl font-medium tracking-tight">
                                 {step === 1
-                                    ? "Регистрация владельца"
-                                    : "Подтвердите email"}
+                                    ? 'Регистрация владельца'
+                                    : 'Подтвердите email'}
                             </DialogTitle>
 
                             <DialogDescription className="mt-2 text-sm leading-relaxed text-muted-foreground">
                                 {step === 1
-                                    ? "Введите данные для активации коллекционной фигурки."
+                                    ? 'Введите данные для активации коллекционной фигурки.'
                                     : `Код подтверждения отправлен на ${maskEmail(email)}`}
                             </DialogDescription>
                         </div>
@@ -379,17 +342,17 @@ export function RegistrationDialog({
                     {/* Индикатор шагов */}
                     <div className="my-6 flex items-center gap-2">
                         <div
-                            className={`h-1 flex-1 rounded-full transition-colors ${step >= 1 ? "bg-primary" : "bg-border"
+                            className={`h-1 flex-1 rounded-full transition-colors ${step >= 1 ? 'bg-primary' : 'bg-border'
                                 }`}
                         />
 
                         <div
-                            className={`h-1 flex-1 rounded-full transition-colors ${step >= 2 ? "bg-primary" : "bg-border"
+                            className={`h-1 flex-1 rounded-full transition-colors ${step >= 2 ? 'bg-primary' : 'bg-border'
                                 }`}
                         />
                     </div>
 
-                    {/* STEP 1 */}
+                    {/* Первый шаг: данные владельца */}
                     {step === 1 && (
                         <div className="space-y-5">
                             {/* Email */}
@@ -426,9 +389,9 @@ export function RegistrationDialog({
                                         autoComplete="email"
                                         placeholder="you@example.com"
                                         value={email}
-                                        onChange={(e) => {
-                                            setEmail(e.target.value)
-                                            setError("")
+                                        onChange={(event) => {
+                                            setEmail(event.target.value)
+                                            setError('')
                                         }}
                                         className="
                                             h-12
@@ -479,9 +442,9 @@ export function RegistrationDialog({
                                         autoComplete="off"
                                         placeholder="Введите секретный ключ"
                                         value={secretKey}
-                                        onChange={(e) => {
-                                            setSecretKey(e.target.value)
-                                            setError("")
+                                        onChange={(event) => {
+                                            setSecretKey(event.target.value)
+                                            setError('')
                                         }}
                                         className="
                                             h-12
@@ -503,8 +466,10 @@ export function RegistrationDialog({
                                 </p>
                             </div>
 
+                            {/* Ошибка первого шага */}
                             {error && (
                                 <p
+                                    role="alert"
                                     className="
                                         rounded-md
                                         border
@@ -521,35 +486,38 @@ export function RegistrationDialog({
                                 </p>
                             )}
 
+                            {/* Обязательные согласия */}
                             <div className="space-y-4">
-                                {/* Согласие на обработку персональных данных */}
                                 <div className="flex items-start gap-3">
                                     <Checkbox
                                         id="personal-data-consent"
                                         checked={personalDataConsent}
                                         onCheckedChange={(checked) => {
-                                            setPersonalDataConsent(checked === true)
+                                            setPersonalDataConsent(
+                                                checked === true,
+                                            )
                                             setError('')
                                         }}
                                     />
 
                                     <Label
                                         htmlFor="personal-data-consent"
-                                        className="text-sm leading-relaxed text-muted-foreground cursor-pointer"
+                                        className="cursor-pointer text-sm leading-relaxed text-muted-foreground"
                                     >
-                                        Я даю согласие на обработку персональных данных в соответствии с{' '}
+                                        Я даю согласие на обработку
+                                        персональных данных в соответствии с{' '}
                                         <Link
                                             href="/legal/personal-data-consent"
                                             target="_blank"
                                             className="text-foreground underline underline-offset-4 hover:text-[#AA141E]"
                                         >
-                                            Согласием на обработку персональных данных
+                                            Согласием на обработку персональных
+                                            данных
                                         </Link>
                                         .
                                     </Label>
                                 </div>
 
-                                {/* Пользовательское соглашение */}
                                 <div className="flex items-start gap-3">
                                     <Checkbox
                                         id="terms-accepted"
@@ -562,7 +530,7 @@ export function RegistrationDialog({
 
                                     <Label
                                         htmlFor="terms-accepted"
-                                        className="text-sm leading-relaxed text-muted-foreground cursor-pointer"
+                                        className="cursor-pointer text-sm leading-relaxed text-muted-foreground"
                                     >
                                         Я принимаю условия{' '}
                                         <Link
@@ -576,7 +544,6 @@ export function RegistrationDialog({
                                     </Label>
                                 </div>
 
-                                {/* Политика конфиденциальности */}
                                 <p className="text-xs leading-relaxed text-muted-foreground">
                                     Ознакомьтесь также с{' '}
                                     <Link
@@ -590,10 +557,15 @@ export function RegistrationDialog({
                                 </p>
                             </div>
 
+                            {/* Переход к подтверждению email */}
                             <button
                                 type="button"
                                 onClick={handleContinue}
-                                disabled={isLoading || !personalDataConsent}
+                                disabled={
+                                    isLoading ||
+                                    !personalDataConsent ||
+                                    !termsAccepted
+                                }
                                 className="
                                     group
                                     flex
@@ -656,7 +628,7 @@ export function RegistrationDialog({
                         </div>
                     )}
 
-                    {/* STEP 2 */}
+                    {/* Второй шаг: подтверждение email */}
                     {step === 2 && (
                         <div className="space-y-6">
                             <div className="flex justify-center">
@@ -679,59 +651,19 @@ export function RegistrationDialog({
                                 </div>
                             </div>
 
-                            {/* OTP */}
-                            <div className="flex justify-center gap-2">
-                                {verificationCode.map((digit, index) => (
-                                    <Input
-                                        key={index}
-                                        ref={(element) => {
-                                            codeRefs.current[index] = element
-                                        }}
-                                        type="text"
-                                        inputMode="numeric"
-                                        maxLength={1}
-                                        value={digit}
-                                        onChange={(e) =>
-                                            handleCodeChange(
-                                                index,
-                                                e.target.value,
-                                            )
-                                        }
-                                        onKeyDown={(e) =>
-                                            handleCodeKeyDown(e, index)
-                                        }
-                                        onPaste={
-                                            index === 0
-                                                ? handleCodePaste
-                                                : undefined
-                                        }
-                                        className="
-                                            h-12
-                                            w-10
-                                            rounded-md
-                                            border-border
-                                            bg-background
-                                            p-0
-                                            text-center
-                                            font-mono
-                                            text-xl
-                                            font-medium
-                                            caret-primary
-                                            transition-all
-                                            focus:border-primary
-                                            focus:bg-background
-                                            focus:ring-2
-                                            focus:ring-primary/20
-                                            sm:h-14
-                                            sm:w-12
-                                        "
-                                        aria-label={`Цифра ${index + 1}`}
-                                    />
-                                ))}
-                            </div>
+                            {/* Шестизначный код подтверждения */}
+                            <EmailCodeInput
+                                code={emailCode.code}
+                                disabled={isLoading}
+                                setInputRef={emailCode.setInputRef}
+                                onChange={handleCodeChange}
+                                onKeyDown={emailCode.handleKeyDown}
+                                onPaste={handleCodePaste}
+                            />
 
                             {error && (
                                 <p
+                                    role="alert"
                                     className="
                                         text-center
                                         font-mono
@@ -743,12 +675,13 @@ export function RegistrationDialog({
                                 </p>
                             )}
 
+                            {/* Таймер и повторная отправка */}
                             <div className="text-center">
-                                {seconds > 0 ? (
+                                {emailCode.seconds > 0 ? (
                                     <p className="font-mono text-xs text-muted-foreground">
-                                        Код действителен{" "}
+                                        Код действителен{' '}
                                         <span className="text-foreground">
-                                            {formattedTime}
+                                            {emailCode.formattedTime}
                                         </span>
                                     </p>
                                 ) : (
@@ -765,6 +698,8 @@ export function RegistrationDialog({
                                             text-muted-foreground
                                             transition-colors
                                             hover:text-foreground
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-40
                                         "
                                     >
                                         <RefreshCw className="h-3.5 w-3.5" />
@@ -774,14 +709,11 @@ export function RegistrationDialog({
                                 )}
                             </div>
 
+                            {/* Подтверждение регистрации */}
                             <button
                                 type="button"
                                 onClick={handleVerify}
-                                disabled={
-                                    verificationCode.some(
-                                        (digit) => !digit,
-                                    ) || isLoading
-                                }
+                                disabled={!emailCode.isComplete || isLoading}
                                 className="
                                     flex
                                     h-12
@@ -826,12 +758,11 @@ export function RegistrationDialog({
                                 )}
                             </button>
 
+                            {/* Возврат к предыдущему шагу */}
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setStep(1)
-                                    setError("")
-                                }}
+                                onClick={handleBack}
+                                disabled={isLoading}
                                 className="
                                     block
                                     w-full
@@ -842,6 +773,8 @@ export function RegistrationDialog({
                                     text-muted-foreground
                                     transition-colors
                                     hover:text-foreground
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-40
                                 "
                             >
                                 ← Изменить email или secret key
@@ -852,18 +785,4 @@ export function RegistrationDialog({
             </DialogContent>
         </Dialog>
     )
-}
-
-function maskEmail(email: string) {
-    const [name, domain] = email.split("@")
-
-    if (!name || !domain) {
-        return email
-    }
-
-    const visible = name.slice(0, Math.min(2, name.length))
-
-    return `${visible}${"*".repeat(
-        Math.max(2, name.length - visible.length),
-    )}@${domain}`
 }
