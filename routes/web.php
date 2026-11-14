@@ -7,11 +7,8 @@ use App\Http\Controllers\ToyController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('welcome');
-})->name('home');
+Route::get('/', [ToyController::class, 'welcome'])->name('home');
 
 Route::controller(LegalController::class)->prefix('legal')->name('legal.')->group(function () {
     Route::get('/privacy', 'privacy')->name('privacy');

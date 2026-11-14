@@ -1,18 +1,18 @@
-import { LucideIcon } from 'lucide-react'
 
-export type PageProps<
-    T extends Record<string, unknown> = Record<string, unknown>,
-> = T & {
-    auth: {
-        user: User
-    }
+import type { LucideIcon } from 'lucide-react'
 
-    flash: {
-        success?: string
-        error?: string
-        mode?: 'registration' | 'login'
-    }
+// =============================================================================
+// Shared / Application
+// =============================================================================
+
+export interface Flash {
+    success?: string
+    error?: string
+    mode?: AuthMode
 }
+
+export type AuthMode = 'registration' | 'login'
+
 export interface Auth {
     user: User | null
 }
@@ -26,12 +26,73 @@ export interface User {
     updated_at: string
 }
 
-// Исправляем циклическую зависимость
+/**
+ * Общие данные, передаваемые Inertia на страницы приложения.
+ */
+export type PageProps<
+    T extends Record<string, unknown> = Record<string, unknown>,
+> = T & {
+    auth: Auth
+    flash: Flash
+}
+
+export interface SharedData {
+    name: string
+    quote: {
+        message: string
+        author: string
+    }
+    auth: Auth
+    flash: Flash
+    [key: string]: unknown
+}
+
+// =============================================================================
+// Authentication
+// =============================================================================
+
+/**
+ * Код фигурки в формате XX-000.
+ */
+export type ToyCode = string
+
+/**
+ * Ответ сервера при проверке кода фигурки.
+ */
+export interface ToyCodeResponse {
+    mode: AuthMode
+}
+
+/**
+ * Props страницы регистрации и авторизации.
+ */
+export interface RegisterPageProps {
+    [key: string]: unknown
+}
+
+// =============================================================================
+// Welcome
+// =============================================================================
+
+export interface Stat {
+    value: number | string
+    label: string
+}
+
+export interface WelcomePageProps {
+    [key: string]: unknown
+    stats: Stat[]
+}
+
+// =============================================================================
+// Skins
+// =============================================================================
+
 export interface Skin {
     id: number
     name: string
     slug: string
-    drops: Drop[]
+    drops: DropSkin[]
     description: string | null
     model_path: string | null
     primary_color: string | null
@@ -44,9 +105,15 @@ export interface Skin {
     deleted_at: string | null
 }
 
-export type DropSkin = Omit<Skin, 'drop'>
+/**
+ * Упрощённое представление Skin для вложенных отношений.
+ */
+export type DropSkin = Omit<Skin, 'drops'>
 
-// Исправляем циклическую зависимость
+// =============================================================================
+// Drops
+// =============================================================================
+
 export interface Drop {
     id: number
     skin_id: number
@@ -63,14 +130,28 @@ export interface Drop {
     deleted_at: string | null
 }
 
+export type DropStatus =
+    | 'active'
+    | 'production'
+    | 'ready'
+    | 'ended'
+    | 'planned'
+
+// =============================================================================
+// Toys
+// =============================================================================
+
 export type ToyStatus = 'produced' | 'available' | 'sold'
 
+/**
+ * Публичное представление фигурки.
+ * Секретные ключи и их хеши не должны передаваться клиенту.
+ */
 export interface Toy {
     id: number
     drop_id: number
     user_id: number | null
-    code: string
-    secret_hash: string
+    code: ToyCode
     number: number
     status: ToyStatus
     claimed_at: string | null
@@ -78,6 +159,10 @@ export interface Toy {
     updated_at: string
     deleted_at: string | null
 }
+
+// =============================================================================
+// Navigation
+// =============================================================================
 
 export interface BreadcrumbItem {
     title: string
@@ -96,17 +181,11 @@ export interface NavItem {
     isActive?: boolean
 }
 
-export interface SharedData {
-    name: string
-    quote: {
-        message: string
-        author: string
-    }
-    auth: Auth
-    [key: string]: unknown
-}
+// =============================================================================
+// Forms
+// =============================================================================
 
-export type DropForm = {
+export interface DropForm {
     name: string
     skinId: string
     editionSize: string
@@ -117,7 +196,7 @@ export type DropForm = {
     saleEndedAt: string
 }
 
-export type SkinForm = {
+export interface SkinForm {
     name: string
     slug: string
     description: string
@@ -129,24 +208,68 @@ export type SkinForm = {
     isActive: boolean
 }
 
-export type DropStatus =
-    | "active"
-    | "production"
-    | "ready"
-    | "ended"
-    | "planned"
+// =============================================================================
+// Statistics
+// =============================================================================
 
-
-export type SkinStats = {
+export interface SkinStats {
     total: number
     active: number
     inactive: number
     deleted: number
 }
 
-export type DropStats = {
+export interface DropStats {
     total: number
     active: number
     totalQuantity: number
     potentialRevenue: number
+}
+
+// =============================================================================
+// Landing Page
+// =============================================================================
+
+export interface PhilosophyFeature {
+    icon: LucideIcon
+    title: string
+    description: string
+}
+
+export interface CollectionItem {
+    name: string
+    number: string
+    description: string
+    image: string
+}
+
+export interface SpecsProps {
+    stats: Stat[]
+}
+
+// =============================================================================
+// Legal Documents
+// =============================================================================
+
+/**
+ * Метаданные юридического документа из YAML frontmatter.
+ */
+export type LegalMetadata = Record<string, unknown>
+
+/**
+ * Отдельный раздел юридического документа.
+ */
+export interface LegalSection {
+    id: string
+    title: string
+    description: string
+    content: string
+}
+
+/**
+ * Результат разбора Markdown-документа.
+ */
+export interface LegalDocumentData {
+    metadata: LegalMetadata
+    sections: LegalSection[]
 }

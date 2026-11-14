@@ -1,68 +1,202 @@
+
 import { parse as parseYaml } from 'yaml'
 
-export type LegalSection = {
-    id: string
-    title: string
-    description: string
-    content: string
+import type {
+    LegalDocumentData,
+    LegalMetadata,
+    LegalSection,
+} from '@/types/index.d'
+
+/**
+ * Проверяет, что YAML-значение является объектом с метаданными.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+    )
 }
 
-export type LegalDocumentData = {
-    metadata: Record<string, any>
-    sections: LegalSection[]
-}
-
-export function parseLegalDocument(content: string): LegalDocumentData {
-    let metadata: Record<string, any> = {}
-    let markdown = content.trim()
-
-    // Извлекаем YAML frontmatter
-    const frontmatterMatch = markdown.match(
-        /^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n|$)/
+/**
+ * Извлекает YAML frontmatter из начала Markdown-документа.
+ */
+function extractFrontmatter(content: string): {
+    metadata: LegalMetadata
+    markdown: string
+} {
+    const match = content.match(
+        /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/,
     )
 
-    if (frontmatterMatch) {
-        try {
-            metadata = parseYaml(frontmatterMatch[1]) ?? {}
-        } catch (error) {
-            console.error('Ошибка разбора YAML:', error)
+    if (!match) {
+        return {
+            metadata: {},
+            markdown: content,
         }
-
-        markdown = markdown.slice(frontmatterMatch[0].length).trim()
     }
 
-    // Разделяем документ на секции по заголовкам ##
-    const parts = markdown.split(/^##\s+(.+)$/gm)
+    let parsedMetadata: unknown
 
-    const sections: LegalSection[] = []
+    try {
+        parsedMetadata = parseYaml(match[1]) as unknown
+    } catch (error) {
+        const message =
+            error instanceof Error
+                ? error.message
+                : 'Неизвестная ошибка разбора YAML.'
 
-    for (let i = 1; i < parts.length; i += 2) {
-        const title = parts[i].trim()
-        const rawContent = (parts[i + 1] ?? '').trim()
+        throw new Error(`Некорректный YAML frontmatter: ${message}`)
+    }
 
-        // Извлекаем описание секции из HTML-комментария
-        const descriptionMatch = rawContent.match(
-            /^<!--\s*description:\s*(.*?)\s*-->\s*(?:\r?\n)?/
+    if (parsedMetadata == null) {
+        parsedMetadata = {}
+    }
+
+    if (!isRecord(parsedMetadata)) {
+        throw new Error(
+            'YAML frontmatter должен содержать объект с метаданными.',
         )
-
-        const description = descriptionMatch?.[1]?.trim() ?? ''
-
-        const sectionContent = descriptionMatch
-            ? rawContent.slice(descriptionMatch[0].length).trim()
-            : rawContent
-
-        const id = `section-${i}`
-
-        sections.push({
-            id,
-            title,
-            description,
-            content: sectionContent,
-        })
     }
 
     return {
+        metadata: parsedMetadata,
+        markdown: content.slice(match[0].length).trim(),
+    }
+}
+
+/**
+ * Извлекает описание из HTML-комментария в начале раздела.
+ *
+ * Формат:
+ * <!-- description: Описание раздела -->
+ */
+function extractDescription(content: string): {
+    description: string
+    content: string
+} {
+    const match = content.match(
+        /^[ \t]*<!--[ \t]*description:[ \t]*([\s\S]*?)-->[ \t]*(?:\r?\n|$)/i,
+    )
+
+    if (!match) {
+        return {
+            description: '',
+            content: content.trim(),
+        }
+    }
+
+    return {
+        description: match[1].trim(),
+        content: content.slice(match[0].length).trim(),
+    }
+}
+
+/**
+ * Разделяет Markdown на секции по заголовкам второго уровня.
+ *
+ * Заголовки внутри блоков кода игнорируются.
+ * Подзаголовки третьего уровня остаются содержимым секции.
+ */
+function extractSections(markdown: string): LegalSection[] {
+    const lines = markdown.split(/\r?\n/)
+    const sections: LegalSection[] = []
+
+    let currentTitle: string | null = null
+    let currentContent: string[] = []
+
+    let codeFence: {
+        character: string
+        length: number
+    } | null = null
+
+    const saveSection = () => {
+        if (currentTitle === null) {
+            return
+        }
+
+        const rawContent = currentContent.join('\n').trim()
+        const { description, content } = extractDescription(rawContent)
+
+        sections.push({
+            id: `section-${sections.length + 1}`,
+            title: currentTitle,
+            description,
+            content,
+        })
+    }
+
+    for (const line of lines) {
+        const fenceMatch = line.match(/^[ \t]{0,3}(`{3,}|~{3,})/)
+
+        if (fenceMatch) {
+            const marker = fenceMatch[1]
+            const character = marker[0]
+
+            if (!codeFence) {
+                codeFence = {
+                    character,
+                    length: marker.length,
+                }
+            } else if (
+                character === codeFence.character &&
+                marker.length >= codeFence.length
+            ) {
+                codeFence = null
+            }
+
+            if (currentTitle !== null) {
+                currentContent.push(line)
+            }
+
+            continue
+        }
+
+        // Не принимаем заголовки внутри fenced code blocks.
+        if (!codeFence) {
+            const headingMatch = line.match(
+                /^[ \t]{0,3}##(?!#)[ \t]+(.+?)\s*#*[ \t]*$/,
+            )
+
+            if (headingMatch) {
+                saveSection()
+
+                currentTitle = headingMatch[1].trim()
+                currentContent = []
+
+                continue
+            }
+        }
+
+        if (currentTitle !== null) {
+            currentContent.push(line)
+        }
+    }
+
+    saveSection()
+
+    return sections
+}
+
+/**
+ * Разбирает юридический документ в формате Markdown.
+ *
+ * Поддерживает:
+ * - YAML frontmatter;
+ * - разделы второго уровня (##);
+ * - подразделы третьего уровня (###);
+ * - описание раздела через HTML-комментарий.
+ */
+export function parseLegalDocument(
+    content: string,
+): LegalDocumentData {
+    const normalizedContent = content.trim()
+
+    const { metadata, markdown } =
+        extractFrontmatter(normalizedContent)
+
+    return {
         metadata,
-        sections,
+        sections: extractSections(markdown),
     }
 }

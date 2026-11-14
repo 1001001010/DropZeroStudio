@@ -2,13 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Toy;
-use App\Models\Drop;
+use App\Models\{Toy, Skin, Drop};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ToyController extends Controller
 {
+
+    public function welcome()
+    {
+        $stats = [
+            [
+                'value' => Toy::where('status', 'sold')->count(),
+                'label' => 'Коллекционеров',
+            ],
+            [
+                'value' => Skin::count(),
+                'label' => 'Дизайнов',
+            ],
+            [
+                'value' => '100%',
+                'label' => 'Уникальные персонажи',
+            ],
+        ];
+        return Inertia::render('welcome', [
+            'stats' => $stats,
+        ]);
+    }
+
     public function index(Request $request)
     {
         $filters = $request->validate([
