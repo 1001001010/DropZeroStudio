@@ -1,32 +1,59 @@
 
 import { useEffect, type ReactNode } from 'react'
-import { usePage } from '@inertiajs/react'
+import { Link, usePage } from '@inertiajs/react'
 import { toast } from 'sonner'
 
 import { Toaster } from '@/components/ui/sonner'
+import type { MainLayoutPageProps } from '@/types/index.d'
 
 interface MainLayoutProps {
     children: ReactNode
 }
 
-interface FlashProps {
-    success?: string
-    error?: string
-    mode?: string
+/**
+ * Основная навигация сайта.
+ *
+ * Конфигурация вынесена за пределы компонента,
+ * чтобы не создавать массив при каждом рендере.
+ */
+const navigationItems = [
+    { label: 'Главная', href: '/' },
+    { label: 'Магазин', href: '/shop' },
+    { label: 'Коллекции', href: '/collections' },
+    { label: 'О нас', href: '/about' },
+] as const
+
+/**
+ * Ссылки в нижней части сайта.
+ */
+const footerItems = [
+    { label: 'Конфиденциальность', href: '/privacy' },
+    { label: 'Условия', href: '/terms' },
+    { label: 'Контакты', href: '/contacts' },
+] as const
+
+/**
+ * Проверяет, соответствует ли текущий URL пункту навигации.
+ */
+function isActiveLink(currentUrl: string, href: string): boolean {
+    const currentPath = currentUrl.split('?')[0].replace(/\/$/, '') || '/'
+    const targetPath = href.replace(/\/$/, '') || '/'
+
+    if (targetPath === '/') {
+        return currentPath === '/'
+    }
+
+    return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
 }
 
-interface PageProps extends Record<string, unknown> {
-    flash?: FlashProps
-}
+export default function MainLayout({ children }: MainLayoutProps) {
+    const { flash, url } = usePage<MainLayoutPageProps>().props
+    const currentYear = new Date().getFullYear()
 
-export default function MainLayout({
-    children,
-}: MainLayoutProps) {
-    const { flash } = usePage<PageProps>().props
-    console.log('FLASH:', flash)
-
+    /**
+     * Показываем уведомления, переданные Laravel через flash-сессию.
+     */
     useEffect(() => {
-
         if (flash?.success) {
             toast.success(flash.success)
         }
@@ -38,11 +65,11 @@ export default function MainLayout({
 
     return (
         <div className="min-h-screen bg-[#050505] text-white">
+            {/* Основная шапка сайта */}
             <header
                 className="
                     fixed
-                    left-0
-                    right-0
+                    inset-x-0
                     top-0
                     z-50
                     border-b
@@ -63,8 +90,10 @@ export default function MainLayout({
                         lg:px-6
                     "
                 >
-                    <a
+                    {/* Логотип */}
+                    <Link
                         href="/"
+                        aria-label="DropZeroStudio — главная"
                         className="
                             shrink-0
                             text-lg
@@ -76,9 +105,11 @@ export default function MainLayout({
                         <span className="text-[#AA141E]">
                             Studio
                         </span>
-                    </a>
+                    </Link>
 
+                    {/* Навигация */}
                     <nav
+                        aria-label="Основная навигация"
                         className="
                             hidden
                             items-center
@@ -87,60 +118,32 @@ export default function MainLayout({
                             xl:gap-8
                         "
                     >
-                        <a
-                            href="/"
-                            className="
-                                whitespace-nowrap
-                                text-sm
-                                text-white/50
-                                transition-colors
-                                hover:text-white
-                            "
-                        >
-                            Главная
-                        </a>
+                        {navigationItems.map((item) => {
+                            const isActive = isActiveLink(url, item.href)
 
-                        <a
-                            href="/shop"
-                            className="
-                                whitespace-nowrap
-                                text-sm
-                                text-white/50
-                                transition-colors
-                                hover:text-white
-                            "
-                        >
-                            Магазин
-                        </a>
-
-                        <a
-                            href="/collections"
-                            className="
-                                whitespace-nowrap
-                                text-sm
-                                text-white/50
-                                transition-colors
-                                hover:text-white
-                            "
-                        >
-                            Коллекции
-                        </a>
-
-                        <a
-                            href="/about"
-                            className="
-                                whitespace-nowrap
-                                text-sm
-                                text-white/50
-                                transition-colors
-                                hover:text-white
-                            "
-                        >
-                            О нас
-                        </a>
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    aria-current={isActive ? 'page' : undefined}
+                                    className={`
+                                        whitespace-nowrap
+                                        text-sm
+                                        transition-colors
+                                        ${isActive
+                                            ? 'text-white'
+                                            : 'text-white/50 hover:text-white'
+                                        }
+                                    `}
+                                >
+                                    {item.label}
+                                </Link>
+                            )
+                        })}
                     </nav>
 
-                    <a
+                    {/* Переход в личный кабинет */}
+                    <Link
                         href="/account"
                         className="
                             shrink-0
@@ -162,21 +165,17 @@ export default function MainLayout({
                         "
                     >
                         Личный кабинет
-                    </a>
+                    </Link>
                 </div>
             </header>
 
-            <main className="pt-16">
+            {/* Основное содержимое страницы */}
+            <main className="min-h-screen pt-16">
                 {children}
             </main>
 
-            <footer
-                className="
-                    border-t
-                    border-white/10
-                    bg-[#050505]
-                "
-            >
+            {/* Подвал сайта */}
+            <footer className="border-t border-white/10 bg-[#050505]">
                 <div
                     className="
                         mx-auto
@@ -196,13 +195,17 @@ export default function MainLayout({
                             md:justify-between
                         "
                     >
+                        {/* Информация о бренде */}
                         <div>
-                            <div className="text-lg font-black">
+                            <Link
+                                href="/"
+                                className="text-lg font-black"
+                            >
                                 DropZero
                                 <span className="text-[#AA141E]">
                                     Studio
                                 </span>
-                            </div>
+                            </Link>
 
                             <p
                                 className="
@@ -218,7 +221,9 @@ export default function MainLayout({
                             </p>
                         </div>
 
-                        <div
+                        {/* Полезные ссылки */}
+                        <nav
+                            aria-label="Дополнительная навигация"
                             className="
                                 flex
                                 flex-wrap
@@ -228,29 +233,22 @@ export default function MainLayout({
                                 text-white/40
                             "
                         >
-                            <a
-                                href="/privacy"
-                                className="transition-colors hover:text-white"
-                            >
-                                Конфиденциальность
-                            </a>
-
-                            <a
-                                href="/terms"
-                                className="transition-colors hover:text-white"
-                            >
-                                Условия
-                            </a>
-
-                            <a
-                                href="/contacts"
-                                className="transition-colors hover:text-white"
-                            >
-                                Контакты
-                            </a>
-                        </div>
+                            {footerItems.map((item) => (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className="
+                                        transition-colors
+                                        hover:text-white
+                                    "
+                                >
+                                    {item.label}
+                                </Link>
+                            ))}
+                        </nav>
                     </div>
 
+                    {/* Копирайт */}
                     <div
                         className="
                             mt-8
@@ -261,12 +259,13 @@ export default function MainLayout({
                             text-white/30
                         "
                     >
-                        © {new Date().getFullYear()} DropZeroStudio.
+                        © {currentYear} DropZeroStudio.
                         Все права защищены.
                     </div>
                 </div>
             </footer>
 
+            {/* Глобальные уведомления */}
             <Toaster />
         </div>
     )

@@ -30,6 +30,7 @@ import { Separator } from '@/components/ui/separator'
 import { AdminNav } from '@/components/admin/admin-nav'
 import { LegalDocumentLayout } from '@/components/admin/legal/legal-document-layout'
 
+// Типы юридических документов и их редакций.
 type LegalVersion = {
     id: number
     version: string
@@ -57,6 +58,7 @@ type Props = {
 
 type EditorTab = 'edit' | 'preview'
 
+// Иконки для разных типов юридических документов.
 const documentIcons: Record<string, typeof FileText> = {
     privacy: ShieldCheck,
     'personal-data-consent': FileCheck,
@@ -68,16 +70,19 @@ export default function Index({
     documents,
     selectedDocument,
 }: Props) {
+    // Выбранный документ.
     const [activeDocumentId, setActiveDocumentId] = useState<number | null>(
         selectedDocument?.id ?? documents[0]?.id ?? null,
     )
 
+    // Открытая редакция выбранного документа.
     const [activeVersionId, setActiveVersionId] = useState<number | null>(
         selectedDocument?.versions?.find(
             (version) => version.status === 'draft',
         )?.id ?? selectedDocument?.current_version?.id ?? null,
     )
 
+    // Активная вкладка редактора.
     const [editorTab, setEditorTab] = useState<EditorTab>('edit')
 
     const activeDocument =
@@ -95,6 +100,7 @@ export default function Index({
 
     const currentVersion = activeDocument?.current_version ?? null
 
+    // Форма содержимого документа.
     const {
         data,
         setData,
@@ -131,11 +137,12 @@ export default function Index({
         setEditorTab('edit')
     }, [activeDocumentId])
 
+    // Иконка текущего документа.
     const Icon = activeDocument
         ? documentIcons[activeDocument.slug] ?? FileText
         : FileText
 
-    // Переключение документа.
+    // Переключение документа с проверкой несохранённых изменений.
     const selectDocument = (document: LegalDocument) => {
         if (document.id === activeDocumentId) return
 
@@ -243,9 +250,9 @@ export default function Index({
                 preserveScroll: true,
 
                 onSuccess: () => {
+                    // Обновляем только список документов.
                     router.reload({
                         only: ['documents'],
-                        preserveState: true,
 
                         onSuccess: (page) => {
                             const props = page.props as unknown as Props
@@ -262,6 +269,7 @@ export default function Index({
 
                             if (!draft) return
 
+                            // Открываем только что созданный черновик.
                             setActiveDocumentId(documentId)
                             setActiveVersionId(draft.id)
                             setData('content', draft.content)

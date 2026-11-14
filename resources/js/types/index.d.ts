@@ -1,25 +1,21 @@
 
-import type { LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
 import type {
     ClipboardEvent,
     KeyboardEvent,
+    ReactNode,
 } from 'react'
 
+import type { LucideIcon } from 'lucide-react'
+
 // =============================================================================
-// Shared / Application
+// Application / Shared
 // =============================================================================
 
-export interface Flash {
-    success?: string
-    error?: string
-    mode?: AuthMode
-}
+export type AuthMode = 'registration' | 'login'
 
-export interface Auth {
-    user: User | null
-}
-
+/**
+ * Пользователь, авторизованный в приложении.
+ */
 export interface User {
     id: number
     email: string
@@ -29,6 +25,30 @@ export interface User {
     updated_at: string
 }
 
+/**
+ * Данные авторизации, доступные на страницах Inertia.
+ */
+export interface Auth {
+    user: User | null
+}
+
+/**
+ * Flash-сообщения, передаваемые Laravel через Inertia.
+ */
+export interface FlashProps {
+    success?: string | null
+    error?: string | null
+    mode?: AuthMode
+}
+
+/**
+ * Совместимость с существующим названием Flash.
+ */
+export type Flash = FlashProps
+
+/**
+ * Общие свойства страниц приложения.
+ */
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
@@ -36,6 +56,9 @@ export type PageProps<
     flash: Flash
 }
 
+/**
+ * Общие данные Inertia-приложения.
+ */
 export interface SharedData {
     name: string
     quote: {
@@ -47,34 +70,17 @@ export interface SharedData {
     [key: string]: unknown
 }
 
+/**
+ * Дополнительные props основного публичного layout.
+ */
+export interface MainLayoutPageProps extends Record<string, unknown> {
+    flash?: FlashProps
+    url: string
+}
+
 // =============================================================================
 // Authentication
 // =============================================================================
-
-export type AuthMode = 'registration' | 'login'
-
-import type {
-    ClipboardEvent,
-    KeyboardEvent,
-} from 'react'
-
-export interface ToyCodeInputProps {
-    prefix: ToyCodePrefix
-    digits: ToyCodeDigits
-    error: string
-    disabled?: boolean
-    setInputRef: (
-        index: number,
-        element: HTMLInputElement | null,
-    ) => void
-    onPrefixChange: (index: number, value: string) => void
-    onDigitChange: (index: number, value: string) => void
-    onKeyDown: (
-        event: KeyboardEvent<HTMLInputElement>,
-        index: number,
-    ) => void
-    onPaste: (event: ClipboardEvent<HTMLInputElement>) => void
-}
 
 /**
  * Код фигурки в формате XX-000.
@@ -96,6 +102,27 @@ export interface ToyCodeInput {
 }
 
 /**
+ * Props компонента ввода кода фигурки.
+ */
+export interface ToyCodeInputProps {
+    prefix: ToyCodePrefix
+    digits: ToyCodeDigits
+    error: string
+    disabled?: boolean
+    setInputRef: (
+        index: number,
+        element: HTMLInputElement | null,
+    ) => void
+    onPrefixChange: (index: number, value: string) => void
+    onDigitChange: (index: number, value: string) => void
+    onKeyDown: (
+        event: KeyboardEvent<HTMLInputElement>,
+        index: number,
+    ) => void
+    onPaste: (event: ClipboardEvent<HTMLInputElement>) => void
+}
+
+/**
  * Успешный ответ при проверке кода фигурки.
  */
 export interface ToyCodeResponse {
@@ -105,7 +132,7 @@ export interface ToyCodeResponse {
 }
 
 /**
- * Ошибка API.
+ * Ответ API с ошибкой.
  */
 export interface ApiErrorResponse {
     success?: false
@@ -120,8 +147,68 @@ export interface ApiSuccessResponse {
     message?: string
 }
 
+/**
+ * Шестизначный код подтверждения email.
+ */
+export type EmailVerificationCode = [
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+]
+
+/**
+ * Props компонента ввода email-кода.
+ */
+export interface EmailCodeInputProps {
+    code: EmailVerificationCode
+    disabled?: boolean
+    setInputRef: (
+        index: number,
+        element: HTMLInputElement | null,
+    ) => void
+    onChange: (index: number, value: string) => void
+    onKeyDown: (
+        event: KeyboardEvent<HTMLInputElement>,
+        index: number,
+    ) => void
+    onPaste: (event: ClipboardEvent<HTMLInputElement>) => void
+}
+
+/**
+ * Общие props карточки авторизации.
+ */
+export interface AuthCardProps {
+    title?: string
+    description?: string
+    children: ReactNode
+    className?: string
+}
+
+/**
+ * Props диалога регистрации владельца фигурки.
+ */
+export interface RegistrationDialogProps {
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    toyCode: ToyCode
+    onComplete?: () => void
+}
+
+/**
+ * Props диалога входа владельца фигурки.
+ */
+export interface ToyLoginDialogProps {
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    toyCode: ToyCode
+    onComplete?: () => void
+}
+
 // =============================================================================
-// Welcome
+// Welcome / Landing Page
 // =============================================================================
 
 export interface Stat {
@@ -132,6 +219,23 @@ export interface Stat {
 export interface WelcomePageProps {
     [key: string]: unknown
     stats: Stat[]
+}
+
+export interface SpecsProps {
+    stats: Stat[]
+}
+
+export interface PhilosophyFeature {
+    icon: LucideIcon
+    title: string
+    description: string
+}
+
+export interface CollectionItem {
+    name: string
+    number: string
+    description: string
+    image: string
 }
 
 // =============================================================================
@@ -195,6 +299,7 @@ export type ToyStatus = 'produced' | 'available' | 'sold'
 
 /**
  * Публичное представление фигурки.
+ *
  * Секретные ключи и их хеши не должны передаваться клиенту.
  */
 export interface Toy {
@@ -277,34 +382,26 @@ export interface DropStats {
 }
 
 // =============================================================================
-// Landing Page
-// =============================================================================
-
-export interface PhilosophyFeature {
-    icon: LucideIcon
-    title: string
-    description: string
-}
-
-export interface CollectionItem {
-    name: string
-    number: string
-    description: string
-    image: string
-}
-
-export interface SpecsProps {
-    stats: Stat[]
-}
-
-// =============================================================================
 // Legal Documents
 // =============================================================================
 
 /**
  * Метаданные юридического документа из YAML frontmatter.
  */
-export type LegalMetadata = Record<string, unknown>
+export interface LegalMetadata {
+    title?: string
+    description?: string
+    seo_title?: string
+    seo_description?: string
+    seo_keywords?: string
+    robots?: string
+    eyebrow?: string
+    important_title?: string
+    important_text?: string
+    contact_title?: string
+    contact_text?: string
+    contact_email?: string
+}
 
 /**
  * Отдельный раздел юридического документа.
@@ -322,62 +419,4 @@ export interface LegalSection {
 export interface LegalDocumentData {
     metadata: LegalMetadata
     sections: LegalSection[]
-}
-
-export interface AuthCardProps {
-    title?: string
-    description?: string
-    children: ReactNode
-    className?: string
-}
-
-
-/**
- * Шестизначный код подтверждения email.
- */
-export type EmailVerificationCode = [
-    string,
-    string,
-    string,
-    string,
-    string,
-    string,
-]
-
-/**
- * Props компонента ввода шестизначного email-кода.
- */
-export interface EmailCodeInputProps {
-    code: EmailVerificationCode
-    disabled?: boolean
-    setInputRef: (
-        index: number,
-        element: HTMLInputElement | null,
-    ) => void
-    onChange: (index: number, value: string) => void
-    onKeyDown: (
-        event: KeyboardEvent<HTMLInputElement>,
-        index: number,
-    ) => void
-    onPaste: (event: ClipboardEvent<HTMLInputElement>) => void
-}
-
-/**
- * Props диалога регистрации владельца фигурки.
- */
-export interface RegistrationDialogProps {
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    toyCode: ToyCode
-    onComplete?: () => void
-}
-
-/**
- * Props диалога входа владельца фигурки.
- */
-export interface ToyLoginDialogProps {
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    toyCode: ToyCode
-    onComplete?: () => void
 }

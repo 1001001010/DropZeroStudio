@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Toast as ToastPrimitive } from "@base-ui/react/toast"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 import {
     CircleCheckIcon,
     InfoIcon,
@@ -118,7 +118,7 @@ function ToastAction({
 function ToastClose({
     className,
     children,
-    render = <Button variant="ghost" size="icon-sm" />,
+    render = <Button variant="ghost" size="icon" />,
     ...props
 }: ToastPrimitive.Close.Props) {
     return (
