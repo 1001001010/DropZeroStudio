@@ -2,65 +2,153 @@
 
 use App\Http\Controllers\Admins\AdminController;
 use App\Http\Controllers\DropController;
-use App\Http\Controllers\SkinController;
-use App\Http\Controllers\ToyController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\SkinController;
+use App\Http\Controllers\ToyController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [ToyController::class, 'welcome'])->name('home');
+/*
+|--------------------------------------------------------------------------
+| Публичные маршруты
+|--------------------------------------------------------------------------
+*/
 
-Route::controller(LegalController::class)->prefix('legal')->name('legal.')->group(function () {
-    Route::get('/privacy', 'privacy')->name('privacy');
-    Route::get('/personal-data-consent', 'personalDataConsent')->name('personal-data-consent');
-    Route::get('/terms', 'terms')->name('terms');
-    Route::get('/offer', 'offer')->name('offer');
-});
+// Главная страница.
+Route::get('/', [ToyController::class, 'welcome'])
+    ->name('home');
 
-Route::get('/toy/{code}', [ProfileController::class, 'profile'])->middleware('auth')->name('toy.profile');
+// Юридические документы.
+Route::controller(LegalController::class)
+    ->prefix('legal')
+    ->name('legal.')
+    ->group(function (): void {
+        Route::get('/privacy', 'privacy')->name('privacy');
 
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/personal-data-consent', 'personalDataConsent')
+            ->name('personal-data-consent');
 
-    Route::controller(LegalController::class)->prefix('legal')->name('legal.')->group(function () {
-        Route::get('/legal', 'index')->name('index');
-        Route::post('/{document}/versions', 'storeVersion')->name('versions.store');
-        Route::put('/{document}/versions/{version}', 'updateVersion')->name('versions.update');
-        Route::post('/{document}/versions/{version}/publish', 'publishVersion')->name('versions.publish');
+        Route::get('/terms', 'terms')->name('terms');
+
+        Route::get('/offer', 'offer')->name('offer');
     });
 
-    Route::controller(AdminController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
+// Личный профиль владельца фигурки.
+Route::get('/toy/{code}', [ProfileController::class, 'profile'])
+    ->middleware('auth')
+    ->name('toy.profile');
+
+/*
+|--------------------------------------------------------------------------
+| Административные маршруты
+|--------------------------------------------------------------------------
+|
+| Все маршруты этой группы доступны только авторизованным администраторам.
+| Middleware admin должен самостоятельно проверять поле is_admin.
+|
+*/
+
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function (): void {
+
+        // Главная страница административной панели.
+        Route::get('/', [AdminController::class, 'index'])
+            ->name('index');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Управление юридическими документами
+        |--------------------------------------------------------------------------
+        */
+
+        Route::controller(LegalController::class)
+            ->prefix('legal')
+            ->name('legal.')
+            ->group(function (): void {
+                Route::get('/', 'index')->name('index');
+
+                Route::post('/{document}/versions', 'storeVersion')
+                    ->name('versions.store');
+
+                Route::put('/{document}/versions/{version}', 'updateVersion')
+                    ->name('versions.update');
+
+                Route::post('/{document}/versions/{version}/publish', 'publishVersion')
+                    ->name('versions.publish');
+            });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Управление скинами
+        |--------------------------------------------------------------------------
+        */
+
+        Route::controller(SkinController::class)
+            ->prefix('skins')
+            ->name('skins.')
+            ->group(function (): void {
+                Route::get('/', 'index')->name('index');
+
+                Route::post('/', 'store')->name('store');
+
+                Route::put('/{skin}', 'update')->name('update');
+
+                Route::delete('/{skin}', 'destroy')->name('destroy');
+
+                // Восстановление мягко удалённого скина.
+                Route::post('/{skin}/restore', 'restore')
+                    ->withTrashed()
+                    ->name('restore');
+            });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Управление коллекциями (Drops)
+        |--------------------------------------------------------------------------
+        */
+
+        Route::controller(DropController::class)
+            ->prefix('drops')
+            ->name('drops.')
+            ->group(function (): void {
+                Route::get('/', 'index')->name('index');
+
+                Route::post('/', 'store')->name('store');
+
+                Route::put('/{drop}', 'update')->name('update');
+
+                Route::delete('/{drop}', 'destroy')->name('destroy');
+            });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Управление фигурками (Toys)
+        |--------------------------------------------------------------------------
+        */
+
+        Route::controller(ToyController::class)
+            ->prefix('toys')
+            ->name('toys.')
+            ->group(function (): void {
+                Route::get('/', 'index')->name('index');
+
+                Route::delete('/{toy}', 'destroy')->name('destroy');
+
+                // Восстановление мягко удалённой фигурки.
+                Route::post('/{toy}/restore', 'restore')
+                    ->withTrashed()
+                    ->name('restore');
+            });
     });
 
-    Route::controller(SkinController::class)->prefix('skins')->name('skins.')->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::post('/', 'store')->name('store');
-        Route::post('/{skin}/update', 'update')->name('update');
-        Route::delete('/{skin}', 'destroy')->name('destroy');
-        Route::post('/{skin}/restore', 'restore')->withTrashed()->name('restore');
-    });
+/*
+|--------------------------------------------------------------------------
+| Дополнительные маршруты
+|--------------------------------------------------------------------------
+*/
 
-    Route::controller(DropController::class)->prefix('drops')->name('drops.')->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::post('/', 'store')->name('store');
-        Route::put('/{drop}', 'update')->name('update');
-        Route::delete('/{drop}', 'destroy')->name('destroy');
-
-    });
-
-
-
-    Route::controller(ToyController::class)
-        ->prefix('toys')
-        ->name('toys.')
-        ->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::delete('/{toy}', 'destroy')->name('destroy');
-            Route::post('/{toy}/restore', 'restore')->withTrashed()->name('restore');
-        });
-
-});
-
+// Настройки профиля и авторизация.
 require __DIR__ . '/settings.php';
-
 require __DIR__ . '/auth.php';

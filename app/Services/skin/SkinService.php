@@ -1,17 +1,21 @@
 <?php
 
-namespace App\Services\skin;
+namespace App\Services\Skin;
 
 use App\Models\Skin;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Throwable;
 
 class SkinService
 {
     /**
-     * Create a new skin.
+     * Создаёт новый скин и сохраняет связанные с ним файлы.
+     *
+     * Если создание записи завершится ошибкой, загруженные файлы
+     * будут удалены, чтобы не оставлять мусор в хранилище.
      *
      * @param array<string, mixed> $data
      *
@@ -24,8 +28,15 @@ class SkinService
 
         try {
             return DB::transaction(function () use ($data, &$modelPath, &$previewImage, ): Skin {
-                $modelPath = $this->storeModel($data['model_path']);
-                $previewImage = $this->storePreviewImage($data['preview_image']);
+                $modelPath = $this->storeFile(
+                    $data['model_path'],
+                    'skins/models',
+                );
+
+                $previewImage = $this->storeFile(
+                    $data['preview_image'],
+                    'skins/previews',
+                );
 
                 return Skin::create([
                     'name' => $data['name'],
@@ -40,6 +51,8 @@ class SkinService
                 ]);
             });
         } catch (Throwable $exception) {
+            // Откат транзакции БД не удаляет физические файлы.
+            // Поэтому очищаем их вручную при возникновении ошибки.
             $this->deleteFile($modelPath);
             $this->deleteFile($previewImage);
 
@@ -48,92 +61,103 @@ class SkinService
     }
 
     /**
-     * Store the 3D model.
-     */
-    private function storeModel(UploadedFile $file): string
-    {
-        return $file->store('skins/models', 'public');
-    }
-
-    /**
-     * Store the skin preview image.
-     */
-    private function storePreviewImage(UploadedFile $file): string
-    {
-        return $file->store('skins/previews', 'public');
-    }
-
-    /**
-     * Delete a stored file.
-     */
-    private function deleteFile(?string $path): void
-    {
-        if ($path !== null) {
-            Storage::disk('public')->delete($path);
-        }
-    }
-
-    /**
-     * Update the specified skin.
+     * Обновляет данные скина и при необходимости заменяет его файлы.
+     *
+     * Новые файлы сначала сохраняются, затем обновляется запись в БД.
+     * Старые файлы удаляются только после успешного обновления.
      *
      * @param array<string, mixed> $data
+     *
+     * @throws Throwable
      */
-    public function update(
-        Skin $skin,
-        array $data,
-    ): Skin {
-        if (isset($data['model_path']) && $data['model_path'] instanceof UploadedFile) {
-            $data['model_path'] = $this->replaceModel(
-                $skin,
-                $data['model_path'],
-            );
-        } else {
-            unset($data['model_path']);
+    public function update(Skin $skin, array $data): Skin
+    {
+        $oldModelPath = $skin->model_path;
+        $oldPreviewImage = $skin->preview_image;
+
+        $newModelPath = null;
+        $newPreviewImage = null;
+
+        try {
+            // Загружаем новую модель, только если пользователь её заменил.
+            if (($data['model_path'] ?? null) instanceof UploadedFile) {
+                $newModelPath = $this->storeFile(
+                    $data['model_path'],
+                    'skins/models',
+                );
+
+                $data['model_path'] = $newModelPath;
+            } else {
+                // Не передаём в update старый путь или пустое значение.
+                unset($data['model_path']);
+            }
+
+            // Аналогично обрабатываем изображение предпросмотра.
+            if (($data['preview_image'] ?? null) instanceof UploadedFile) {
+                $newPreviewImage = $this->storeFile(
+                    $data['preview_image'],
+                    'skins/previews',
+                );
+
+                $data['preview_image'] = $newPreviewImage;
+            } else {
+                unset($data['preview_image']);
+            }
+
+            // Изменения записи выполняются в транзакции.
+            DB::transaction(function () use ($skin, $data): void {
+                $skin->update($data);
+            });
+        } catch (Throwable $exception) {
+            // Если обновление не удалось, удаляем только новые файлы.
+            // Старые файлы остаются нетронутыми.
+            $this->deleteFile($newModelPath);
+            $this->deleteFile($newPreviewImage);
+
+            throw $exception;
         }
 
-        if (isset($data['preview_image']) && $data['preview_image'] instanceof UploadedFile) {
-            $data['preview_image'] = $this->replacePreview(
-                $skin,
-                $data['preview_image'],
-            );
-        } else {
-            unset($data['preview_image']);
+        // Удаляем предыдущие файлы только после успешного обновления БД.
+        if ($newModelPath !== null) {
+            $this->deleteFile($oldModelPath);
         }
 
-        $skin->update($data);
+        if ($newPreviewImage !== null) {
+            $this->deleteFile($oldPreviewImage);
+        }
 
         return $skin->refresh();
     }
 
     /**
-     * Replace the 3D model of the skin.
+     * Сохраняет загруженный файл на публичный диск.
+     *
+     * @throws RuntimeException
      */
-    private function replaceModel(
-        Skin $skin,
+    private function storeFile(
         UploadedFile $file,
+        string $directory,
     ): string {
-        $path = $file->store('skins/models', 'public');
+        $path = $file->store($directory, 'public');
 
-        if ($skin->model_path) {
-            Storage::disk('public')->delete($skin->model_path);
+        if (!is_string($path)) {
+            throw new RuntimeException(
+                "Не удалось сохранить файл в директорию {$directory}.",
+            );
         }
 
         return $path;
     }
 
     /**
-     * Replace the preview image of the skin.
+     * Удаляет файл с публичного диска.
      */
-    private function replacePreview(
-        Skin $skin,
-        UploadedFile $file,
-    ): string {
-        $path = $file->store('skins/previews', 'public');
-
-        if ($skin->preview_image) {
-            Storage::disk('public')->delete($skin->preview_image);
+    private function deleteFile(?string $path): void
+    {
+        if ($path === null) {
+            return;
         }
 
-        return $path;
+        Storage::disk('public')->delete($path);
     }
 }

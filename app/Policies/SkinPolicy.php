@@ -4,60 +4,131 @@ namespace App\Policies;
 
 use App\Models\Skin;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class SkinPolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * Проверяет, обладает ли пользователь административными правами.
+     *
+     * Используется внутренними методами политики для определения,
+     * разрешено ли пользователю выполнять административные операции
+     * над скинами.
+     *
+     * @param User $user Авторизованный пользователь, для которого проверяются права.
+     *
+     * @return bool true, если пользователь является администратором, иначе false.
+     */
+    private function isAdmin(User $user): bool
+    {
+        return $user->isAdmin();
+    }
+
+    /**
+     * Определяет, разрешено ли пользователю просматривать список скинов.
+     *
+     * Доступ к списку скинов и административной статистике предоставляется
+     * исключительно пользователям с административными правами.
+     *
+     * @param User $user Авторизованный пользователь, запрашивающий список скинов.
+     *
+     * @return bool true, если пользователь может просматривать список, иначе false.
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $this->isAdmin($user);
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Определяет, разрешено ли пользователю просматривать отдельный скин.
+     *
+     * На текущем этапе просмотр отдельных скинов в рамках административной
+     * политики доступен только администраторам.
+     *
+     * @param User $user Авторизованный пользователь, запрашивающий скин.
+     * @param Skin $skin Экземпляр скина, к которому запрашивается доступ.
+     *
+     * @return bool true, если пользователь может просматривать скин, иначе false.
      */
     public function view(User $user, Skin $skin): bool
     {
-        return false;
+        return $this->isAdmin($user);
     }
 
     /**
-     * Determine whether the user can create models.
+     * Определяет, разрешено ли пользователю создавать новые скины.
+     *
+     * Создание скинов является административной операцией и недоступно
+     * обычным пользователям.
+     *
+     * @param User $user Авторизованный пользователь, инициирующий создание скина.
+     *
+     * @return bool true, если пользователь может создавать скины, иначе false.
      */
     public function create(User $user): bool
     {
-        return true;
+        return $this->isAdmin($user);
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Определяет, разрешено ли пользователю изменять существующий скин.
+     *
+     * Проверка распространяется на все редактируемые данные скина,
+     * включая его название, описание, параметры оформления и файлы модели.
+     *
+     * @param User $user Авторизованный пользователь, инициирующий обновление.
+     * @param Skin $skin Скин, данные которого предполагается изменить.
+     *
+     * @return bool true, если пользователь может редактировать скин, иначе false.
      */
     public function update(User $user, Skin $skin): bool
     {
-        return true;
+        return $this->isAdmin($user);
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Определяет, разрешено ли пользователю перемещать скин в корзину.
+     *
+     * Используется для авторизации мягкого удаления записи.
+     * Само удаление выполняется отдельно методом delete() модели Skin.
+     *
+     * @param User $user Авторизованный пользователь, инициирующий удаление.
+     * @param Skin $skin Скин, который предполагается переместить в корзину.
+     *
+     * @return bool true, если пользователь может удалить скин, иначе false.
      */
     public function delete(User $user, Skin $skin): bool
     {
-        return true;
+        return $this->isAdmin($user);
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Определяет, разрешено ли пользователю восстанавливать удалённый скин.
+     *
+     * Восстановление возвращает запись в активную часть базы данных,
+     * не создавая новый экземпляр скина.
+     *
+     * @param User $user Авторизованный пользователь, инициирующий восстановление.
+     * @param Skin $skin Удалённый скин, который предполагается восстановить.
+     *
+     * @return bool true, если пользователь может восстановить скин, иначе false.
      */
     public function restore(User $user, Skin $skin): bool
     {
-        return true;
+        return $this->isAdmin($user);
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Запрещает безвозвратное удаление скинов.
+     *
+     * В отличие от мягкого удаления, force delete физически удаляет запись
+     * из базы данных. Операция запрещена для всех пользователей,
+     * включая администраторов, чтобы сохранить историю и целостность
+     * связанных данных.
+     *
+     * @param User $user Авторизованный пользователь, инициирующий удаление.
+     * @param Skin $skin Скин, который предполагается удалить безвозвратно.
+     *
+     * @return bool Всегда false, поскольку полное удаление запрещено.
      */
     public function forceDelete(User $user, Skin $skin): bool
     {

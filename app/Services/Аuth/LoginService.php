@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\auth;
+namespace App\Services\Аuth;
 
 use App\Mail\ToyVerificationCode;
 use App\Models\{Toy, User};

@@ -9,8 +9,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Skin extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
 
+    /**
+     * Поля, доступные для массового заполнения.
+     *
+     * Файлы и основные характеристики скина сохраняются
+     * через SkinService после проверки входных данных.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'name',
         'slug',
@@ -23,7 +32,14 @@ class Skin extends Model
         'is_active',
     ];
 
-
+    /**
+     * Преобразование атрибутов модели.
+     *
+     * is_active всегда возвращается как boolean,
+     * независимо от того, как значение хранится в БД.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -31,6 +47,11 @@ class Skin extends Model
         ];
     }
 
+    /**
+     * Коллекции, связанные с этим скином.
+     *
+     * Один скин может использоваться в нескольких Drops.
+     */
     public function drops(): HasMany
     {
         return $this->hasMany(Drop::class);

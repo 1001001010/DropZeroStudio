@@ -57,7 +57,7 @@ export function EditSkinDialog({
         preview_image: File | null
         is_active: boolean
     }>({
-        _method: 'post',
+        _method: 'put',
         name: skin.name ?? '',
         slug: skin.slug ?? '',
         description: skin.description ?? '',
@@ -109,7 +109,7 @@ export function EditSkinDialog({
         )
         setData('preview_image', null)
         setData('is_active', Boolean(skin.is_active))
-        setData('_method', 'post')
+        setData('_method', 'put')
 
         setPreviewUrl(null)
     }, [isOpen, skin])
