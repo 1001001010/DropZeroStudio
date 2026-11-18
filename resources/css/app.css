@@ -6,6 +6,42 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   Instrument Sans — локальные WOFF2-шрифты
+   ========================================================================== */
+
+@font-face {
+    font-family: 'Instrument Sans';
+    src: url('/fonts/instrument-sans/InstrumentSans-Regular.woff2') format('woff2');
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Instrument Sans';
+    src: url('/fonts/instrument-sans/InstrumentSans-Medium.woff2') format('woff2');
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Instrument Sans';
+    src: url('/fonts/instrument-sans/InstrumentSans-SemiBold.woff2') format('woff2');
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Instrument Sans';
+    src: url('/fonts/instrument-sans/InstrumentSans-Bold.woff2') format('woff2');
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+}
+
 @theme {
     --font-sans:
         'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';

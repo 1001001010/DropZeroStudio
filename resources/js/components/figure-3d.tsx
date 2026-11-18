@@ -216,9 +216,22 @@ export function Figure3D({ modelPath }: Figure3DProps) {
         : null
 
     return (
+        // <Canvas
+        //     shadows
+        //     dpr={[1, 2]}
+        //     camera={{
+        //         position: [0, 0.3, 4.6],
+        //         fov: 42,
+        //     }}
+        //     gl={{
+        //         antialias: true,
+        //         alpha: true,
+        //     }}
+        // >
         <Canvas
             shadows
-            dpr={[1, 2]}
+            dpr={[1, 1.5]}
+            performance={{ min: 0.5 }}
             camera={{
                 position: [0, 0.3, 4.6],
                 fov: 42,
@@ -226,6 +239,7 @@ export function Figure3D({ modelPath }: Figure3DProps) {
             gl={{
                 antialias: true,
                 alpha: true,
+                powerPreference: 'high-performance',
             }}
         >
             <ambientLight intensity={0.35} />
@@ -263,15 +277,27 @@ export function Figure3D({ modelPath }: Figure3DProps) {
                     )}
                 </Float>
 
-                <ContactShadows
+                {/* <ContactShadows
                     position={[0, -1.6, 0]}
                     opacity={0.55}
                     scale={9}
                     blur={2.6}
                     far={4}
+                /> */}
+                <ContactShadows
+                    position={[0, -1.6, 0]}
+                    opacity={0.55}
+                    scale={5}
+                    blur={2}
+                    far={3}
+                    resolution={256}
                 />
 
-                <Environment preset="warehouse" />
+                <Environment
+                    files="/hdr/empty_warehouse_01_1k.hdr"
+                    background={false}
+                    environmentIntensity={0.8}
+                />
             </Suspense>
 
             <OrbitControls

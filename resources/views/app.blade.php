@@ -37,9 +37,8 @@
 
     {{-- Fonts --}}
 
-    <link rel="preconnect" href="https://fonts.bunny.net">
-
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet">
+    <link rel="preload" href="/fonts/instrument-sans/InstrumentSans-Regular.woff2" as="font" type="font/woff2"
+        crossorigin>
 
     <title inertia>DropZeroStudio</title>
 
@@ -47,7 +46,25 @@
 
     @viteReactRefresh
 
-    @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+    <script>
+        (() => {
+            try {
+                const appearance = localStorage.getItem('appearance') || 'system';
+
+                const isDark = appearance === 'dark' ||
+                    (
+                        appearance === 'system' &&
+                        window.matchMedia('(prefers-color-scheme: dark)').matches
+                    );
+
+                document.documentElement.classList.toggle('dark', isDark);
+            } catch {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    @vite(['resources/css/app.css', 'resources/js/app.tsx'])
 
     @inertiaHead
 </head>

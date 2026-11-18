@@ -51,7 +51,7 @@ class UpdateSkinRequest extends FormRequest
                 'sometimes',
                 'nullable',
                 'file',
-                'mimes:glb,gltf,obj,fbx,blend',
+                'extensions:glb,gltf,obj,fbx,blend',
                 'max:102400',
             ],
 

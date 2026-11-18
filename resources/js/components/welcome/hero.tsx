@@ -10,7 +10,7 @@ const Figure3D = lazy(() =>
 
 // Путь к публичной 3D-модели.
 const HERO_MODEL_PATH =
-    'skins/models/e9OeasHi1I3eTw0MwwaRwLZuWWgSCquhtKVOZ06k.bin'
+    'skins/models/Model.glb'
 
 const heroDetails = [
     {

@@ -1,8 +1,9 @@
-/* prettier-ignore */
 import { createInertiaApp } from '@inertiajs/react';
 import createServer from '@inertiajs/react/server';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import ReactDOMServer from 'react-dom/server';
+
+import CookieConsent from '@/components/cookie-consent';
 
 const appName = import.meta.env.VITE_APP_NAME || 'DropZeroStudio';
 
@@ -22,7 +23,11 @@ createServer((page) =>
                 }),
             ),
 
-        /* prettier-ignore */
-        setup: ({ App, props }) => <App {...props} />,
+        setup: ({ App, props }) => (
+            <>
+                <App {...props} />
+                <CookieConsent />
+            </>
+        ),
     }),
 );
