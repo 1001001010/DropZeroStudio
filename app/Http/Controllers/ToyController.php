@@ -86,6 +86,7 @@ class ToyController extends Controller
                     'status' => $toy->status,
                     'claimedAt' => $toy->claimed_at?->toDateTimeString(),
                     'deletedAt' => $toy->deleted_at?->toDateTimeString(),
+                    'toyPhoto' => $toy->drop->skin->preview_image,
                 ];
             });
 

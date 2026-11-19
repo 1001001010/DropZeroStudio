@@ -420,3 +420,125 @@ export interface LegalDocumentData {
     metadata: LegalMetadata
     sections: LegalSection[]
 }
+
+/**
+ * Допустимые статусы заказа.
+ */
+export type OrderStatus =
+    | 'pending'
+    | 'accepted'
+    | 'shipped'
+    | 'completed'
+    | 'cancelled'
+
+/**
+ * Статусы оплаты заказа.
+ */
+export type PaymentStatus =
+    | 'pending'
+    | 'paid'
+    | 'failed'
+    | 'refunded'
+
+/**
+ * Статусы доставки заказа.
+ */
+export type DeliveryStatus =
+    | 'not_shipped'
+    | 'preparing'
+    | 'in_transit'
+    | 'delivered'
+    | 'returned'
+
+/**
+ * Информация о покупателе.
+ */
+export interface OrderCustomer {
+    id: number
+    name: string
+    email: string | null
+    phone: string | null
+    telegramId: string | null
+    telegramUsername: string | null
+}
+
+/**
+ * Товар в составе заказа.
+ */
+export interface OrderItem {
+    id: number
+    dropName: string
+    figureName: string
+    quantity: number
+    unitPrice: number
+    totalPrice: number
+    imageUrl: string | null
+}
+
+/**
+ * Информация об оплате заказа.
+ */
+export interface OrderPayment {
+    status: PaymentStatus
+    method: string | null
+    provider: string | null
+    transactionId: string | null
+    currency: string
+    paidAt: string | null
+    rawResponse: Record<string, unknown> | null
+}
+
+/**
+ * Информация о доставке заказа.
+ */
+export interface OrderDelivery {
+    status: DeliveryStatus
+    provider: string | null
+    trackingNumber: string | null
+    recipientName: string | null
+    phone: string | null
+    address: string | null
+    rawResponse: Record<string, unknown> | null
+}
+
+/**
+ * Событие в истории заказа.
+ */
+export interface OrderHistoryEvent {
+    id: number
+    title: string
+    description: string | null
+    createdAt: string
+    actor: string | null
+}
+
+/**
+ * Полная информация о заказе.
+ */
+export interface Order {
+    id: number
+    number: string
+    status: OrderStatus
+    createdAt: string
+    updatedAt: string
+    customer: OrderCustomer
+    items: OrderItem[]
+    payment: OrderPayment
+    delivery: OrderDelivery
+    subtotal: number
+    deliveryPrice: number
+    discount: number
+    total: number
+    comment: string | null
+    history: OrderHistoryEvent[]
+}
+
+/**
+ * Данные статистики заказов.
+ */
+interface OrdersStats {
+    total: number
+    active: number
+    completed: number
+    revenue: number
+}

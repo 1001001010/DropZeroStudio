@@ -12,6 +12,7 @@ export type Toy = {
     status: ToyStatus
     claimedAt: string | null
     deletedAt?: string | null
+    toyPhoto: string
 }
 
 export type ToyDrop = {

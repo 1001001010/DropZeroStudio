@@ -1,5 +1,7 @@
 "use client"
 
+import { Head } from '@inertiajs/react'
+
 import { AdminNav } from "@/components/admin/admin-nav"
 import { DropHeader } from "@/components/admin/drops/drop-header"
 import { DropStats } from "@/components/admin/drops/drop-stats"
@@ -23,24 +25,27 @@ export default function DropPage({
     stats: DropStatsType
 }>) {
     return (
-        <main className="min-h-screen bg-background">
-            <AdminNav />
+        <>
+            <Head title="Дропы" />
+            <main className="min-h-screen bg-background">
+                <AdminNav />
 
-            <div className="space-y-8 p-6 lg:p-8">
-                <DropHeader skins={skins} />
+                <div className="space-y-8 p-6 lg:p-8">
+                    <DropHeader skins={skins} />
 
-                <DropStats
-                    total={stats.total}
-                    active={stats.active}
-                    totalQuantity={stats.totalQuantity}
-                    potentialRevenue={stats.potentialRevenue}
-                />
+                    <DropStats
+                        total={stats.total}
+                        active={stats.active}
+                        totalQuantity={stats.totalQuantity}
+                        potentialRevenue={stats.potentialRevenue}
+                    />
 
-                <DropTable
-                    drops={drops}
-                    skins={skins}
-                />
-            </div>
-        </main>
+                    <DropTable
+                        drops={drops}
+                        skins={skins}
+                    />
+                </div>
+            </main>
+        </>
     )
 }

@@ -1,4 +1,4 @@
-import { MoreHorizontal, CircleUserRound, Package, Trash2, ArchiveRestore } from 'lucide-react'
+import { MoreHorizontal, CircleUserRound, Trash2, ArchiveRestore } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -46,8 +46,8 @@ export function ToyRow({
     return (
         <TableRow
             className={`group transition-colors ${deletedView
-                    ? 'bg-destructive/[0.03] hover:bg-destructive/[0.06]'
-                    : 'hover:bg-muted/40'
+                ? 'bg-destructive/[0.03] hover:bg-destructive/[0.06]'
+                : 'hover:bg-muted/40'
                 }`}
         >
             <TableCell className="py-4 pl-6">
@@ -59,7 +59,11 @@ export function ToyRow({
             <TableCell>
                 <div className="flex items-center gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-muted/40">
-                        <Package className="size-4 text-muted-foreground" />
+                        <img
+                            src={`/storage/${toy.toyPhoto}`}
+                            alt={toy.skinName || `Экземпляр №${toy.number}`}
+                            className={`size-full object-cover`}
+                        />
                     </div>
 
                     <div className="min-w-0">

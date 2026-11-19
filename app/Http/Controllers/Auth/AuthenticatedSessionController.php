@@ -9,7 +9,7 @@ use App\Http\Requests\{
     ToyLoginCodeRequest,
     VerifyToyCodeRequest
 };
-use App\Services\auth\LoginService;
+use App\Services\Аuth\LoginService;
 use Illuminate\Http\{
     JsonResponse,
     RedirectResponse,

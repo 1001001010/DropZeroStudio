@@ -1,5 +1,7 @@
 "use client"
 
+import { Head } from '@inertiajs/react'
+
 import { AdminNav } from "@/components/admin/admin-nav"
 import {
     SkinHeader,
@@ -26,23 +28,26 @@ export default function CollectionsPage({
     stats: SkinStatsType
 }>) {
     return (
-        <main className="min-h-screen bg-background">
-            <AdminNav />
+        <>
+            <Head title="Скины" />
+            <main className="min-h-screen bg-background">
+                <AdminNav />
 
-            <div className="space-y-8 p-6 lg:p-8">
-                <SkinHeader />
+                <div className="space-y-8 p-6 lg:p-8">
+                    <SkinHeader />
 
-                <SkinStats
-                    total={stats.total}
-                    active={stats.active}
-                    inactive={stats.inactive}
-                    deleted={stats.deleted}
-                />
+                    <SkinStats
+                        total={stats.total}
+                        active={stats.active}
+                        inactive={stats.inactive}
+                        deleted={stats.deleted}
+                    />
 
-                <SkinTable
-                    skins={skins}
-                />
-            </div>
-        </main>
+                    <SkinTable
+                        skins={skins}
+                    />
+                </div>
+            </main>
+        </>
     )
 }

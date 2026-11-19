@@ -143,6 +143,31 @@ Route::middleware(['auth', 'admin'])
             });
     });
 
+
+use Inertia\Inertia;
+Route::prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        // Тестовая страница со списком заказов.
+        Route::get('/orders', function () {
+            return Inertia::render('admin/orders/index', [
+                'orders' => require resource_path('js/data/mock-orders.php'),
+            ]);
+        })->name('orders.index');
+
+        // Тестовая страница просмотра заказа.
+        Route::get('/orders/{order}', function (int $order) {
+            $orders = require resource_path('js/data/mock-orders.php');
+
+            $selectedOrder = collect($orders)->firstWhere('id', $order);
+
+            abort_if(!$selectedOrder, 404);
+
+            return Inertia::render('admin/orders/show', [
+                'order' => $selectedOrder,
+            ]);
+        })->name('orders.show');
+    });
 /*
 |--------------------------------------------------------------------------
 | Дополнительные маршруты
