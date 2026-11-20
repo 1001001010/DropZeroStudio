@@ -1,10 +1,4 @@
-
-import type {
-    ClipboardEvent,
-    KeyboardEvent,
-    ReactNode,
-} from 'react'
-
+import type { ClipboardEvent, KeyboardEvent, ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 
 // =============================================================================
@@ -13,9 +7,7 @@ import type { LucideIcon } from 'lucide-react'
 
 export type AuthMode = 'registration' | 'login'
 
-/**
- * Пользователь, авторизованный в приложении.
- */
+/** Пользователь, авторизованный в приложении. */
 export interface User {
     id: number
     email: string
@@ -25,30 +17,22 @@ export interface User {
     updated_at: string
 }
 
-/**
- * Данные авторизации, доступные на страницах Inertia.
- */
+/** Данные авторизации, доступные на страницах Inertia. */
 export interface Auth {
     user: User | null
 }
 
-/**
- * Flash-сообщения, передаваемые Laravel через Inertia.
- */
+/** Flash-сообщения, передаваемые Laravel через Inertia. */
 export interface FlashProps {
     success?: string | null
     error?: string | null
     mode?: AuthMode
 }
 
-/**
- * Совместимость с существующим названием Flash.
- */
+/** Совместимость с существующим названием Flash. */
 export type Flash = FlashProps
 
-/**
- * Общие свойства страниц приложения.
- */
+/** Общие свойства страниц приложения. */
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
@@ -56,9 +40,7 @@ export type PageProps<
     flash: Flash
 }
 
-/**
- * Общие данные Inertia-приложения.
- */
+/** Общие данные Inertia-приложения. */
 export interface SharedData {
     name: string
     quote: {
@@ -70,9 +52,7 @@ export interface SharedData {
     [key: string]: unknown
 }
 
-/**
- * Дополнительные props основного публичного layout.
- */
+/** Дополнительные props основного публичного layout. */
 export interface MainLayoutPageProps extends Record<string, unknown> {
     flash?: FlashProps
     url: string
@@ -82,74 +62,52 @@ export interface MainLayoutPageProps extends Record<string, unknown> {
 // Authentication
 // =============================================================================
 
-/**
- * Код фигурки в формате XX-000.
- */
+/** Код фигурки в формате XX-000. */
 export type ToyCode = string
 
-/**
- * Символы кода фигурки.
- */
+/** Символы кода фигурки. */
 export type ToyCodePrefix = [string, string]
 export type ToyCodeDigits = [string, string, string]
 
-/**
- * Состояние полей ввода кода фигурки.
- */
+/** Состояние полей ввода кода фигурки. */
 export interface ToyCodeInput {
     prefix: ToyCodePrefix
     digits: ToyCodeDigits
 }
 
-/**
- * Props компонента ввода кода фигурки.
- */
+/** Props компонента ввода кода фигурки. */
 export interface ToyCodeInputProps {
     prefix: ToyCodePrefix
     digits: ToyCodeDigits
     error: string
     disabled?: boolean
-    setInputRef: (
-        index: number,
-        element: HTMLInputElement | null,
-    ) => void
+    setInputRef: (index: number, element: HTMLInputElement | null) => void
     onPrefixChange: (index: number, value: string) => void
     onDigitChange: (index: number, value: string) => void
-    onKeyDown: (
-        event: KeyboardEvent<HTMLInputElement>,
-        index: number,
-    ) => void
+    onKeyDown: (event: KeyboardEvent<HTMLInputElement>, index: number) => void
     onPaste: (event: ClipboardEvent<HTMLInputElement>) => void
 }
 
-/**
- * Успешный ответ при проверке кода фигурки.
- */
+/** Успешный ответ при проверке кода фигурки. */
 export interface ToyCodeResponse {
     success: true
     mode: AuthMode
     message?: string
 }
 
-/**
- * Ответ API с ошибкой.
- */
+/** Ответ API с ошибкой. */
 export interface ApiErrorResponse {
     success?: false
     message: string
 }
 
-/**
- * Общий успешный ответ API.
- */
+/** Общий успешный ответ API. */
 export interface ApiSuccessResponse {
     success: true
     message?: string
 }
 
-/**
- * Шестизначный код подтверждения email.
- */
+/** Шестизначный код подтверждения email. */
 export type EmailVerificationCode = [
     string,
     string,
@@ -159,27 +117,17 @@ export type EmailVerificationCode = [
     string,
 ]
 
-/**
- * Props компонента ввода email-кода.
- */
+/** Props компонента ввода email-кода. */
 export interface EmailCodeInputProps {
     code: EmailVerificationCode
     disabled?: boolean
-    setInputRef: (
-        index: number,
-        element: HTMLInputElement | null,
-    ) => void
+    setInputRef: (index: number, element: HTMLInputElement | null) => void
     onChange: (index: number, value: string) => void
-    onKeyDown: (
-        event: KeyboardEvent<HTMLInputElement>,
-        index: number,
-    ) => void
+    onKeyDown: (event: KeyboardEvent<HTMLInputElement>, index: number) => void
     onPaste: (event: ClipboardEvent<HTMLInputElement>) => void
 }
 
-/**
- * Общие props карточки авторизации.
- */
+/** Общие props карточки авторизации. */
 export interface AuthCardProps {
     title?: string
     description?: string
@@ -187,9 +135,7 @@ export interface AuthCardProps {
     className?: string
 }
 
-/**
- * Props диалога регистрации владельца фигурки.
- */
+/** Props диалога регистрации владельца фигурки. */
 export interface RegistrationDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
@@ -197,9 +143,7 @@ export interface RegistrationDialogProps {
     onComplete?: () => void
 }
 
-/**
- * Props диалога входа владельца фигурки.
- */
+/** Props диалога входа владельца фигурки. */
 export interface ToyLoginDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
@@ -208,7 +152,7 @@ export interface ToyLoginDialogProps {
 }
 
 // =============================================================================
-// Welcome / Landing Page
+// Public Pages / Landing
 // =============================================================================
 
 export interface Stat {
@@ -239,7 +183,7 @@ export interface CollectionItem {
 }
 
 // =============================================================================
-// Skins
+// Catalog / Skins
 // =============================================================================
 
 export interface Skin {
@@ -259,13 +203,11 @@ export interface Skin {
     deleted_at: string | null
 }
 
-/**
- * Упрощённое представление Skin для вложенных отношений.
- */
+/** Упрощённое представление Skin для вложенных отношений. */
 export type DropSkin = Omit<Skin, 'drops'>
 
 // =============================================================================
-// Drops
+// Catalog / Drops
 // =============================================================================
 
 export interface Drop {
@@ -292,14 +234,13 @@ export type DropStatus =
     | 'planned'
 
 // =============================================================================
-// Toys
+// Catalog / Toys
 // =============================================================================
 
 export type ToyStatus = 'produced' | 'available' | 'sold'
 
 /**
  * Публичное представление фигурки.
- *
  * Секретные ключи и их хеши не должны передаваться клиенту.
  */
 export interface Toy {
@@ -337,7 +278,7 @@ export interface NavItem {
 }
 
 // =============================================================================
-// Forms
+// Forms / Catalog
 // =============================================================================
 
 export interface DropForm {
@@ -385,9 +326,7 @@ export interface DropStats {
 // Legal Documents
 // =============================================================================
 
-/**
- * Метаданные юридического документа из YAML frontmatter.
- */
+/** Метаданные юридического документа из YAML frontmatter. */
 export interface LegalMetadata {
     title?: string
     description?: string
@@ -403,9 +342,7 @@ export interface LegalMetadata {
     contact_email?: string
 }
 
-/**
- * Отдельный раздел юридического документа.
- */
+/** Отдельный раздел юридического документа. */
 export interface LegalSection {
     id: string
     title: string
@@ -413,36 +350,42 @@ export interface LegalSection {
     content: string
 }
 
-/**
- * Результат разбора Markdown-документа.
- */
+/** Результат разбора Markdown-документа. */
 export interface LegalDocumentData {
     metadata: LegalMetadata
     sections: LegalSection[]
 }
 
-/**
- * Допустимые статусы заказа.
- */
+// =============================================================================
+// Orders / Statuses
+// =============================================================================
+
+/** Допустимые статусы заказа. */
 export type OrderStatus =
     | 'pending'
     | 'accepted'
+    | 'processing'
     | 'shipped'
     | 'completed'
     | 'cancelled'
 
-/**
- * Статусы оплаты заказа.
- */
+/** Статусы оплаты заказа. */
 export type PaymentStatus =
     | 'pending'
     | 'paid'
     | 'failed'
     | 'refunded'
+    | 'partially_refunded'
 
-/**
- * Статусы доставки заказа.
- */
+export type ShipmentStatus =
+    | 'not_shipped'
+    | 'preparing'
+    | 'in_transit'
+    | 'delivered'
+    | 'returned'
+
+
+/** Статусы доставки заказа. */
 export type DeliveryStatus =
     | 'not_shipped'
     | 'preparing'
@@ -450,9 +393,11 @@ export type DeliveryStatus =
     | 'delivered'
     | 'returned'
 
-/**
- * Информация о покупателе.
- */
+// =============================================================================
+// Orders / Data
+// =============================================================================
+
+/** Информация о покупателе в представлении заказа. */
 export interface OrderCustomer {
     id: number
     name: string
@@ -463,34 +408,52 @@ export interface OrderCustomer {
 }
 
 /**
- * Товар в составе заказа.
+ * Позиция в составе заказа.
+ * Поля соответствуют сериализации модели OrderItem в Laravel.
  */
 export interface OrderItem {
     id: number
-    dropName: string
-    figureName: string
+    order_id: number
+
+    drop_id: number | null
+    skin_id: number | null
+    toy_id: number | null
+
+    product_name: string
+    drop_name: string
+    skin_name: string
+    product_code: string
+
     quantity: number
-    unitPrice: number
-    totalPrice: number
-    imageUrl: string | null
+    unit_price: number | string
+    total_price: number | string
+
+    metadata: Record<string, unknown> | null
+
+    created_at: string
+    updated_at: string
 }
 
-/**
- * Информация об оплате заказа.
- */
-export interface OrderPayment {
-    status: PaymentStatus
-    method: string | null
-    provider: string | null
-    transactionId: string | null
+/** Информация об оплате заказа. */
+export type OrderPayment = {
+    id: number
+    order_id: number
+
+    amount: number | string
     currency: string
-    paidAt: string | null
-    rawResponse: Record<string, unknown> | null
-}
+    status: PaymentStatus
+    method: string
+    provider: string | null
+    transaction_id: string | null
+    paid_at: string | null
+    refunded_at: string | null
 
-/**
- * Информация о доставке заказа.
- */
+    metadata: Record<string, unknown> | null
+
+    created_at: string
+    updated_at: string
+}
+/** Информация о доставке заказа. */
 export interface OrderDelivery {
     status: DeliveryStatus
     provider: string | null
@@ -501,9 +464,7 @@ export interface OrderDelivery {
     rawResponse: Record<string, unknown> | null
 }
 
-/**
- * Событие в истории заказа.
- */
+/** Событие в истории заказа. */
 export interface OrderHistoryEvent {
     id: number
     title: string
@@ -512,33 +473,127 @@ export interface OrderHistoryEvent {
     actor: string | null
 }
 
-/**
- * Полная информация о заказе.
- */
-export interface Order {
+/** Полная информация о заказе для интерфейса. */
+export type Order = {
     id: number
     number: string
-    status: OrderStatus
-    createdAt: string
-    updatedAt: string
-    customer: OrderCustomer
-    items: OrderItem[]
-    payment: OrderPayment
-    delivery: OrderDelivery
-    subtotal: number
-    deliveryPrice: number
-    discount: number
-    total: number
+
+    customer_name: string
+    telegram_id: number | null
+    telegram_username: string | null
+    telegram_url: string | null
+    email: string | null
+    phone: string | null
+
+    currency: string
     comment: string | null
-    history: OrderHistoryEvent[]
+    admin_note: string | null
+
+    status: OrderStatus
+
+    subtotal: number | string
+    delivery_price: number | string
+    discount: number | string
+    total: number | string
+
+    paid_at: string | null
+    completed_at: string | null
+    cancelled_at: string | null
+
+    created_at: string
+    updated_at: string
+
+    items: OrderItem[]
+    payments: OrderPayment[]
+    shipments: OrderShipment[]
 }
 
-/**
- * Данные статистики заказов.
- */
-interface OrdersStats {
+/** Данные статистики заказов. */
+export interface OrdersStats {
     total: number
     active: number
     completed: number
     revenue: number
+}
+
+export type OrderShipment = {
+    id: number
+    order_id: number
+
+    provider: string | null
+    provider_order_id: string | null
+    tracking_number: string | null
+    status: ShipmentStatus
+
+    recipient_name: string
+    phone: string
+
+    country: string
+    city: string
+    postal_code: string | null
+    address: string
+
+    shipping_data: Record<string, unknown> | null
+
+    shipped_at: string | null
+    delivered_at: string | null
+
+    created_at: string
+    updated_at: string
+}
+
+// =============================================================================
+// Orders / Drop Options
+// =============================================================================
+
+/** Скин, связанный с коллекцией Drop в форме заказа. */
+export interface OrderDropSkin {
+    id: number
+    name: string
+    slug: string
+    description: string | null
+    modelPath: string | null
+    previewImage: string | null
+    primaryColor: string | null
+    secondaryColor: string | null
+    accentColor: string | null
+}
+
+/** Коллекция Drop, доступная для добавления в заказ. */
+export interface OrderDropOption {
+    id: number
+    name: string
+    price: number
+    editionSize: number
+    availableQuantity: number
+    skin: OrderDropSkin
+}
+
+// =============================================================================
+// Forms / Orders
+// =============================================================================
+
+/** Способ выбора фигурки при создании заказа. */
+export type OrderItemSelectionMode = 'random' | 'number' | 'code'
+
+/** Позиция заказа в форме создания. */
+export interface StoreOrderItemData {
+    drop_id: string
+    selection_mode: OrderItemSelectionMode
+    quantity: string
+    toy_number: string
+    toy_code: string
+}
+
+/** Данные формы создания заказа. */
+export interface StoreOrderFormData {
+    customer_name: string
+    telegram_id: string
+    telegram_username: string
+    telegram_url: string
+    email: string
+    phone: string
+    currency: string
+    admin_note: string
+    items: StoreOrderItemData[]
 }

@@ -59,4 +59,34 @@ class User extends Authenticatable
     {
         return $this->is_admin;
     }
+
+    /**
+     * Заказы, созданные администратором.
+     *
+     * @return HasMany<Order, $this>
+     */
+    public function createdOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'created_by');
+    }
+
+    /**
+     * История изменений заказов.
+     *
+     * @return HasMany<OrderStatusHistory, $this>
+     */
+    public function orderStatusChanges(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class, 'changed_by');
+    }
+
+    /**
+     * Файлы, загруженные пользователем.
+     *
+     * @return HasMany<OrderAttachment, $this>
+     */
+    public function uploadedOrderAttachments(): HasMany
+    {
+        return $this->hasMany(OrderAttachment::class, 'uploaded_by');
+    }
 }

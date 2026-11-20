@@ -6,29 +6,42 @@ import { OrdersHeader } from '@/components/admin/orders/orders-header'
 import { OrdersStats } from '@/components/admin/orders/orders-stats'
 import { OrdersTable } from '@/components/admin/orders/orders-table'
 
-import type { Order } from '@/types/index.d'
+import type {
+    Order,
+    OrderDropOption,
+} from '@/types/index.d'
 
 interface OrdersIndexPageProps {
     orders: Order[]
+    drops: OrderDropOption[]
 }
 
 /**
  * Главная страница раздела заказов.
  */
-export default function OrdersIndexPage({ orders }: OrdersIndexPageProps) {
+export default function OrdersIndexPage({
+    orders,
+    drops,
+}: OrdersIndexPageProps) {
+    // Общее количество заказов.
     const total = orders.length
 
+    // Количество активных заказов.
     const active = orders.filter((order) =>
         ['pending', 'accepted', 'shipped'].includes(order.status),
     ).length
 
+    // Количество завершённых заказов.
     const completed = orders.filter(
         (order) => order.status === 'completed',
     ).length
 
+    // Сумма заказов, у которых есть хотя бы один успешный платёж.
     const revenue = orders
-        .filter((order) => order.payment.status === 'paid')
-        .reduce((sum, order) => sum + order.total, 0)
+        .filter((order) =>
+            order.payments.some((payment) => payment.status === 'paid'),
+        )
+        .reduce((sum, order) => sum + Number(order.total), 0)
 
     return (
         <>
@@ -38,7 +51,7 @@ export default function OrdersIndexPage({ orders }: OrdersIndexPageProps) {
                 <AdminNav />
 
                 <div className="space-y-8 p-6 lg:p-8">
-                    <OrdersHeader />
+                    <OrdersHeader drops={drops} />
 
                     <OrdersStats
                         total={total}

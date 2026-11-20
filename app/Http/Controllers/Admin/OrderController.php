@@ -3,63 +3,94 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Drop;
+use App\Models\Order;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use App\Http\Requests\StoreOrderRequest;
+use App\Services\Orders\OrderCreationService;
+use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class OrderController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Отображает список заказов и передаёт доступные Drop
+     * для формы создания нового заказа.
      */
-    public function index()
+    public function index(): Response
     {
-        //
+        // Получаем реальные заказы из базы данных.
+        $orders = Order::query()
+            ->with([
+                'items',
+                'payments',
+                'shipments',
+            ])
+            ->latest()
+            ->get();
+
+        // Получаем коллекции, в которых есть свободные фигурки.
+        /** @var Collection<int, Drop> $dropCollection */
+        $dropCollection = Drop::query()
+            ->with([
+                'skin:id,name,slug,description,model_path,primary_color,secondary_color,accent_color,preview_image',
+            ])
+            ->withCount([
+                'toys as available_quantity' => fn(Builder $query) => $query
+                    ->where('status', 'available'),
+            ])
+            ->whereHas('skin', fn(Builder $query) => $query
+                ->where('is_active', true)
+                ->whereNull('skins.deleted_at'))
+            ->whereHas('toys', fn(Builder $query) => $query
+                ->where('status', 'available'))
+            ->orderBy('name')
+            ->get();
+
+        $drops = $dropCollection
+            ->map(fn(Drop $drop): array => [
+                'id' => $drop->id,
+                'name' => $drop->name,
+                'price' => (float) $drop->price,
+                'editionSize' => $drop->edition_size,
+                'availableQuantity' => $drop->available_quantity,
+
+                'skin' => [
+                    'id' => $drop->skin->id,
+                    'name' => $drop->skin->name,
+                    'slug' => $drop->skin->slug,
+                    'description' => $drop->skin->description,
+                    'modelPath' => $drop->skin->model_path,
+                    'previewImage' => $drop->skin->preview_image,
+                    'primaryColor' => $drop->skin->primary_color,
+                    'secondaryColor' => $drop->skin->secondary_color,
+                    'accentColor' => $drop->skin->accent_color,
+                ],
+            ])
+            ->values();
+
+        return Inertia::render('admin/orders/index', [
+            'orders' => $orders,
+            'drops' => $drops,
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Создать новый заказ.
      */
-    public function create()
-    {
-        //
-    }
+    public function store(
+        StoreOrderRequest $request,
+        OrderCreationService $orderCreationService,
+    ): RedirectResponse {
+        $orderCreationService->create(
+            $request->validated(),
+            $request->user()->id,
+        );
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()
+            ->route('admin.orders.index')
+            ->with('success', 'Заказ успешно создан.');
     }
 }

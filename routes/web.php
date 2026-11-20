@@ -5,6 +5,7 @@ use App\Http\Controllers\DropController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\SkinController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\ToyController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,22 @@ Route::middleware(['auth', 'admin'])
         // Главная страница административной панели.
         Route::get('/', [AdminController::class, 'index'])
             ->name('index');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Управление заказами
+        |--------------------------------------------------------------------------
+        */
+        Route::controller(OrderController::class)
+            ->prefix('orders')
+            ->name('orders.')
+            ->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::post('/', 'store')->name('store');
+            });
+
+
 
         /*
         |--------------------------------------------------------------------------
@@ -143,31 +160,6 @@ Route::middleware(['auth', 'admin'])
             });
     });
 
-
-use Inertia\Inertia;
-Route::prefix('admin')
-    ->name('admin.')
-    ->group(function () {
-        // Тестовая страница со списком заказов.
-        Route::get('/orders', function () {
-            return Inertia::render('admin/orders/index', [
-                'orders' => require resource_path('js/data/mock-orders.php'),
-            ]);
-        })->name('orders.index');
-
-        // Тестовая страница просмотра заказа.
-        Route::get('/orders/{order}', function (int $order) {
-            $orders = require resource_path('js/data/mock-orders.php');
-
-            $selectedOrder = collect($orders)->firstWhere('id', $order);
-
-            abort_if(!$selectedOrder, 404);
-
-            return Inertia::render('admin/orders/show', [
-                'order' => $selectedOrder,
-            ]);
-        })->name('orders.show');
-    });
 /*
 |--------------------------------------------------------------------------
 | Дополнительные маршруты
@@ -177,3 +169,6 @@ Route::prefix('admin')
 // Настройки профиля и авторизация.
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
+
+
+// Теперь нужно создать OrderStatusService, но перед ним я предлагаю добавить Form Requests, чтобы сервис получал строго проверенные данные. Иначе даже хорошая бизнес-логика не защитит нас от некорректного запроса.
