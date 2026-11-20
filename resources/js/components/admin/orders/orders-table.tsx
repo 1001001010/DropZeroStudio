@@ -217,11 +217,15 @@ function getLatestStatus<S extends string>(
     return latestRecord.status
 }
 
-/** Определяет статус оплаты заказа. */
+/**
+ * Возвращает статус оплаты заказа.
+ *
+ * Если платёж ещё не создан, возвращает pending.
+ */
 function getPaymentStatus(
-    payments: Order['payments'],
+    payment: Order['payment'],
 ): PaymentStatus {
-    return getLatestStatus<PaymentStatus>(payments, 'pending')
+    return payment?.status ?? 'pending'
 }
 
 /** Определяет статус доставки заказа. */
@@ -372,7 +376,7 @@ function OrderRow({ order }: { order: Order }) {
     const orderStatus = ORDER_STATUS_CONFIG[order.status]
 
     const paymentStatus =
-        PAYMENT_STATUS_CONFIG[getPaymentStatus(order.payments)]
+        PAYMENT_STATUS_CONFIG[getPaymentStatus(order.payment)]
 
     const shipmentStatus =
         SHIPMENT_STATUS_CONFIG[getShipmentStatus(order.shipments)]
@@ -393,15 +397,13 @@ function OrderRow({ order }: { order: Order }) {
         ),
     ]
 
-    const orderUrl = `/admin/orders/${order.id}`
-
     return (
         <TableRow className="group transition-colors hover:bg-muted/40">
             {/* Номер и дата заказа */}
             <TableCell className="py-4 pl-6">
                 <div className="space-y-1">
                     <Link
-                        href={orderUrl}
+                        href={route('admin.orders.show', order.id)}
                         className="inline-flex items-center gap-1 font-medium transition-colors hover:text-primary"
                     >
                         #{order.number}
@@ -521,7 +523,7 @@ function OrderRow({ order }: { order: Order }) {
             <TableCell className="pr-6">
                 <div className="flex justify-end">
                     <Link
-                        href={orderUrl}
+                        href={route('admin.orders.show', order.id)}
                         aria-label={`Открыть заказ ${order.number}`}
                         className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >

@@ -45,13 +45,14 @@ export function OrderItems({
     items,
     currency,
 }: OrderItemsProps) {
+    console.log(items)
     const totalQuantity = items.reduce(
         (total, item) => total + item.quantity,
         0,
     )
 
     const totalPrice = items.reduce(
-        (total, item) => total + item.totalPrice,
+        (total, item) => Number(total) + Number(item.total_price),
         0,
     )
 
@@ -82,10 +83,10 @@ export function OrderItems({
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                                     {/* Изображение фигурки */}
                                     <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted">
-                                        {item.imageUrl ? (
+                                        {item.skin.preview_image ? (
                                             <img
-                                                src={item.imageUrl}
-                                                alt={item.figureName}
+                                                src={`/storage/${item.skin.preview_image}`}
+                                                alt={item.product_name}
                                                 className="size-full object-cover"
                                                 loading="lazy"
                                             />
@@ -97,11 +98,11 @@ export function OrderItems({
                                     {/* Информация о товаре */}
                                     <div className="min-w-0 flex-1 space-y-1">
                                         <p className="font-medium">
-                                            {item.figureName}
+                                            {item.product_name}
                                         </p>
 
                                         <p className="text-sm text-muted-foreground">
-                                            {item.dropName}
+                                            {item.drop.name}
                                         </p>
 
                                         <p className="text-xs text-muted-foreground">
@@ -112,11 +113,11 @@ export function OrderItems({
                                     {/* Количество и стоимость */}
                                     <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
                                         <p className="text-sm text-muted-foreground">
-                                            {formatCurrency(item.unitPrice, currency)} × {item.quantity}
+                                            {formatCurrency(item.drop.price, currency)} × {item.quantity}
                                         </p>
 
                                         <p className="font-semibold tabular-nums">
-                                            {formatCurrency(item.totalPrice, currency)}
+                                            {formatCurrency(Number(item.total_price), currency)}
                                         </p>
                                     </div>
                                 </div>

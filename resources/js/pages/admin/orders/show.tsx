@@ -1,4 +1,3 @@
-
 import { Head, Link } from '@inertiajs/react'
 import { ArrowLeft, Package } from 'lucide-react'
 
@@ -25,6 +24,7 @@ interface OrderShowPageProps {
  * Получает данные заказа через Inertia из Laravel-контроллера.
  */
 export default function OrderShowPage({ order }: OrderShowPageProps) {
+
     return (
         <>
             <Head title={`Заказ ${order.number}`} />
@@ -58,8 +58,7 @@ export default function OrderShowPage({ order }: OrderShowPageProps) {
                                 </div>
 
                                 <p className="text-sm text-muted-foreground">
-                                    Подробная информация о заказе и его
-                                    обработке.
+                                    Подробная информация о заказе и его обработке.
                                 </p>
                             </div>
 
@@ -83,7 +82,7 @@ export default function OrderShowPage({ order }: OrderShowPageProps) {
 
                             <OrderItems
                                 items={order.items}
-                                currency={order.payment.currency}
+                                currency={order.currency}
                             />
 
                             <OrderHistory events={order.history} />
@@ -92,16 +91,17 @@ export default function OrderShowPage({ order }: OrderShowPageProps) {
                         {/* Боковая колонка */}
                         <aside className="min-w-0 space-y-6">
                             <OrderCustomer
-                                customer={order.customer}
-                                address={order.delivery.address}
+                                order={order}
+                                address={order.delivery?.address ?? null}
                             />
 
                             <OrderPayment
                                 payment={order.payment}
-                                total={order.total}
+                                total={Number(order.total)}
+                                currency={order.currency}
                             />
 
-                            <OrderDelivery delivery={order.delivery} />
+                            <OrderDelivery order={order} />
                         </aside>
                     </div>
                 </main>

@@ -26,14 +26,12 @@ import {
 } from '@/components/ui/collapsible'
 import { Separator } from '@/components/ui/separator'
 
-import type { PaymentStatus, OrderPayment } from '@/types/index.d'
+import type { PaymentStatus, OrderPayment as OrderPaymentType } from '@/types/index.d'
 
 interface OrderPaymentProps {
-    /** Информация об оплате заказа. */
-    payment: OrderPayment
-
-    /** Итоговая сумма заказа. */
+    payment: OrderPaymentType | null
     total: number
+    currency: string
 }
 
 /**
@@ -67,13 +65,15 @@ const PAYMENT_STATUS_CONFIG: Record<
         variant: 'outline',
         icon: RefreshCcw,
     },
+    partially_refunded: {
+        label: 'Средства частично возмещены',
+        variant: 'outline',
+        icon: RefreshCcw,
+    },
 }
 
 /**
  * Форматирует дату и время.
- *
- * @param value Дата в формате ISO.
- * @returns Локализованная дата и время.
  */
 function formatDate(value: string): string {
     return new Intl.DateTimeFormat('ru-RU', {
@@ -87,10 +87,6 @@ function formatDate(value: string): string {
 
 /**
  * Форматирует денежную сумму.
- *
- * @param value Сумма в основной единице валюты.
- * @param currency Код валюты ISO 4217.
- * @returns Локализованная денежная сумма.
  */
 function formatCurrency(value: number, currency: string): string {
     return new Intl.NumberFormat('ru-RU', {
@@ -102,9 +98,6 @@ function formatCurrency(value: number, currency: string): string {
 
 /**
  * Копирует идентификатор транзакции в буфер обмена.
- *
- * @param transactionId Идентификатор транзакции.
- * @returns Promise после выполнения копирования.
  */
 async function copyTransactionId(transactionId: string): Promise<void> {
     try {
@@ -118,19 +111,24 @@ async function copyTransactionId(transactionId: string): Promise<void> {
 /**
  * Отображает информацию об оплате заказа.
  *
- * @param payment Данные платёжной системы.
- * @param total Итоговая сумма заказа.
- * @returns Карточка с информацией о платеже и техническими данными.
+ * Если платёж ещё не создан, показывает ожидающий статус
+ * и сумму заказа без технических данных платежа.
  */
 export function OrderPayment({
     payment,
     total,
+    currency,
 }: OrderPaymentProps) {
-    const status = PAYMENT_STATUS_CONFIG[payment.status]
+    // Если платёж отсутствует, используем статус ожидания оплаты.
+    const status = payment
+        ? PAYMENT_STATUS_CONFIG[payment.status]
+        : PAYMENT_STATUS_CONFIG.pending
+
     const StatusIcon = status.icon
 
-    const formattedResponse = payment.rawResponse
-        ? JSON.stringify(payment.rawResponse, null, 2)
+    // Технический ответ доступен только при наличии платежа.
+    const formattedResponse = payment?.metadata
+        ? JSON.stringify(payment.metadata, null, 2)
         : null
 
     return (
@@ -141,10 +139,7 @@ export function OrderPayment({
                     Оплата
                 </CardTitle>
 
-                <Badge
-                    variant={status.variant}
-                    className="gap-1.5"
-                >
+                <Badge variant={status.variant} className="gap-1.5">
                     <StatusIcon className="size-3.5" />
                     {status.label}
                 </Badge>
@@ -155,116 +150,148 @@ export function OrderPayment({
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">
-                            Сумма платежа
+                            Сумма заказа
                         </p>
 
                         <p className="text-lg font-semibold tabular-nums">
-                            {formatCurrency(total, payment.currency)}
+                            {formatCurrency(total, currency)}
                         </p>
                     </div>
 
-                    <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">
-                            Способ оплаты
-                        </p>
+                    {payment && (
+                        <>
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                    Сумма платежа
+                                </p>
 
-                        <p className="text-sm font-medium">
-                            {payment.method || 'Не указан'}
-                        </p>
-                    </div>
+                                <p className="text-lg font-semibold tabular-nums">
+                                    {formatCurrency(
+                                        Number(payment.amount),
+                                        payment.currency,
+                                    )}
+                                </p>
+                            </div>
 
-                    <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">
-                            Платёжная система
-                        </p>
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                    Способ оплаты
+                                </p>
 
-                        <p className="text-sm font-medium">
-                            {payment.provider || 'Не указана'}
-                        </p>
-                    </div>
+                                <p className="text-sm font-medium">
+                                    {payment.method || 'Не указан'}
+                                </p>
+                            </div>
 
-                    <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">
-                            Дата оплаты
-                        </p>
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                    Платёжная система
+                                </p>
 
-                        <p className="text-sm font-medium">
-                            {payment.paidAt
-                                ? formatDate(payment.paidAt)
-                                : 'Нет данных'}
-                        </p>
-                    </div>
-                </div>
+                                <p className="text-sm font-medium">
+                                    {payment.provider || 'Не указана'}
+                                </p>
+                            </div>
 
-                <Separator />
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                    Дата оплаты
+                                </p>
 
-                {/* Идентификатор транзакции */}
-                <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground">
-                        ID транзакции
-                    </p>
-
-                    {payment.transactionId ? (
-                        <div className="flex flex-wrap items-center gap-2">
-                            <code className="min-w-0 break-all rounded-md bg-muted px-3 py-2 text-xs">
-                                {payment.transactionId}
-                            </code>
-
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="size-8 shrink-0"
-                                onClick={() => copyTransactionId(payment.transactionId!)}
-                                aria-label="Скопировать ID транзакции"
-                            >
-                                <FileJson className="size-4" />
-                            </Button>
-                        </div>
-                    ) : (
-                        <p className="text-sm text-muted-foreground">
-                            Транзакция ещё не создана.
-                        </p>
+                                <p className="text-sm font-medium">
+                                    {payment.paid_at
+                                        ? formatDate(payment.paid_at)
+                                        : 'Нет данных'}
+                                </p>
+                            </div>
+                        </>
                     )}
                 </div>
 
-                <Separator />
+                {!payment ? (
+                    <div className="rounded-lg border border-dashed p-4 text-center">
+                        <Clock3 className="mx-auto mb-2 size-5 text-muted-foreground" />
 
-                {/* Исходный ответ платёжной системы */}
-                <Collapsible>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium">
-                                Ответ платёжной системы
-                            </p>
+                        <p className="text-sm font-medium">
+                            Платёж ещё не создан
+                        </p>
 
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Информация о платеже появится после его создания.
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        <Separator />
+
+                        {/* Идентификатор транзакции */}
+                        <div className="space-y-2">
                             <p className="text-xs text-muted-foreground">
-                                Исходные данные API в формате JSON.
+                                ID транзакции
                             </p>
+
+                            {payment.transaction_id ? (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <code className="min-w-0 break-all rounded-md bg-muted px-3 py-2 text-xs">
+                                        {payment.transaction_id}
+                                    </code>
+
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="size-8 shrink-0"
+                                        onClick={() =>
+                                            copyTransactionId(payment.transaction_id!)
+                                        }
+                                        aria-label="Скопировать ID транзакции"
+                                    >
+                                        <FileJson className="size-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Транзакция ещё не создана.
+                                </p>
+                            )}
                         </div>
 
-                        <CollapsibleTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                            >
-                                <ExternalLink className="size-3.5" />
-                                Показать данные
-                            </Button>
-                        </CollapsibleTrigger>
-                    </div>
+                        <Separator />
 
-                    <CollapsibleContent className="pt-3">
-                        {formattedResponse ? (
-                            <pre className="max-h-80 overflow-auto rounded-lg border bg-muted/50 p-3 text-xs leading-relaxed">
-                                {formattedResponse}
-                            </pre>
-                        ) : (
-                            <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                                Данные от платёжной системы пока отсутствуют.
+                        {/* Исходные данные платёжной системы */}
+                        <Collapsible>
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium">
+                                        Данные платежа
+                                    </p>
+
+                                    <p className="text-xs text-muted-foreground">
+                                        Сохранённые технические данные в формате JSON.
+                                    </p>
+                                </div>
+
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <ExternalLink className="size-3.5" />
+                                        Показать данные
+                                    </Button>
+                                </CollapsibleTrigger>
                             </div>
-                        )}
-                    </CollapsibleContent>
-                </Collapsible>
+
+                            <CollapsibleContent className="pt-3">
+                                {formattedResponse ? (
+                                    <pre className="max-h-80 overflow-auto rounded-lg border bg-muted/50 p-3 text-xs leading-relaxed">
+                                        {formattedResponse}
+                                    </pre>
+                                ) : (
+                                    <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+                                        Технические данные пока отсутствуют.
+                                    </div>
+                                )}
+                            </CollapsibleContent>
+                        </Collapsible>
+                    </>
+                )}
             </CardContent>
         </Card>
     )

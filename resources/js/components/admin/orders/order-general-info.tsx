@@ -2,6 +2,7 @@
 import {
     CalendarDays,
     CheckCircle2,
+    Clock11Icon,
     Clock3,
     CreditCard,
     Package,
@@ -59,6 +60,11 @@ const ORDER_STATUS_CONFIG: Record<
         variant: 'destructive',
         icon: XCircle,
     },
+    processing: {
+        label: 'В обработке',
+        variant: 'outline',
+        icon: Clock11Icon,
+    },
 }
 
 /**
@@ -101,7 +107,7 @@ function formatCurrency(value: number, currency: string): string {
 export function OrderGeneralInfo({ order }: OrderGeneralInfoProps) {
     const status = ORDER_STATUS_CONFIG[order.status]
     const StatusIcon = status.icon
-    const currency = order.payment.currency
+    const currency = order.payment?.currency ?? order.currency
 
     return (
         <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
@@ -155,7 +161,7 @@ export function OrderGeneralInfo({ order }: OrderGeneralInfoProps) {
                         </div>
 
                         <p className="text-sm font-medium">
-                            {formatDate(order.createdAt)}
+                            {formatDate(order.created_at)}
                         </p>
                     </div>
 
@@ -166,7 +172,7 @@ export function OrderGeneralInfo({ order }: OrderGeneralInfoProps) {
                         </div>
 
                         <p className="text-sm font-medium">
-                            {formatDate(order.updatedAt)}
+                            {formatDate(order.updated_at)}
                         </p>
                     </div>
                 </CardContent>
@@ -188,7 +194,7 @@ export function OrderGeneralInfo({ order }: OrderGeneralInfoProps) {
                         </span>
 
                         <span className="font-medium tabular-nums">
-                            {formatCurrency(order.subtotal, currency)}
+                            {formatCurrency(Number(order.subtotal), currency)}
                         </span>
                     </div>
 
@@ -198,7 +204,7 @@ export function OrderGeneralInfo({ order }: OrderGeneralInfoProps) {
                         </span>
 
                         <span className="font-medium tabular-nums">
-                            {formatCurrency(order.deliveryPrice, currency)}
+                            {formatCurrency(Number(order.delivery_price), currency)}
                         </span>
                     </div>
 
@@ -208,7 +214,7 @@ export function OrderGeneralInfo({ order }: OrderGeneralInfoProps) {
                         </span>
 
                         <span className="font-medium tabular-nums">
-                            −{formatCurrency(order.discount, currency)}
+                            −{formatCurrency(Number(order.discount), currency)}
                         </span>
                     </div>
 
@@ -219,7 +225,7 @@ export function OrderGeneralInfo({ order }: OrderGeneralInfoProps) {
                             </span>
 
                             <span className="text-xl font-semibold tabular-nums">
-                                {formatCurrency(order.total, currency)}
+                                {formatCurrency(Number(order.total), currency)}
                             </span>
                         </div>
                     </div>

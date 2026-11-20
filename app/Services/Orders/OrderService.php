@@ -251,8 +251,8 @@ class OrderService
              */
             return $order->load([
                 'items',
-                'payments',
-                'shipments',
+                'payment',
+                'shipment',
                 'history',
                 'attachments',
                 'creator',

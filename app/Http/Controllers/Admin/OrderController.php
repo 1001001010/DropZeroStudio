@@ -25,8 +25,8 @@ class OrderController extends Controller
         $orders = Order::query()
             ->with([
                 'items',
-                'payments',
-                'shipments',
+                'payment',
+                'shipment',
             ])
             ->latest()
             ->get();
@@ -92,5 +92,26 @@ class OrderController extends Controller
         return redirect()
             ->route('admin.orders.index')
             ->with('success', 'Заказ успешно создан.');
+    }
+
+    /**
+     * Отображение подробной информации о заказе.
+     */
+    public function show(Order $order): Response
+    {
+        return Inertia::render('admin/orders/show', [
+            'order' => $order->load([
+                // Позиции заказа и связанные с ними сущности.
+                'items.drop',
+                'items.skin',
+                'items.toy',
+
+                // Основные связи заказа.
+                'payment',
+                'shipment',
+                'history',
+                'creator',
+            ]),
+        ]);
     }
 }

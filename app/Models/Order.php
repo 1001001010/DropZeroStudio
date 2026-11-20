@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
@@ -76,21 +77,20 @@ class Order extends Model
      *
      * @return HasMany<OrderPayment, $this>
      */
-    public function payments(): HasMany
+    public function payment(): HasOne
     {
-        return $this->hasMany(OrderPayment::class);
+        return $this->hasOne(OrderPayment::class);
     }
 
     /**
      * Отправления заказа.
      *
-     * @return HasMany<OrderShipment, $this>
+     * @return HasOne<OrderShipment, $this>
      */
-    public function shipments(): HasMany
+    public function shipment(): HasOne
     {
-        return $this->hasMany(OrderShipment::class);
+        return $this->hasOne(OrderShipment::class);
     }
-
     /**
      * История изменения статусов.
      *

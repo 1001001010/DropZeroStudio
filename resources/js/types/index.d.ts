@@ -432,6 +432,9 @@ export interface OrderItem {
 
     created_at: string
     updated_at: string
+    drop: Drop
+    skin: Skin
+    toy: Toy
 }
 
 /** Информация об оплате заказа. */
@@ -462,6 +465,7 @@ export interface OrderDelivery {
     phone: string | null
     address: string | null
     rawResponse: Record<string, unknown> | null
+    OrderShipment: OrderShipment
 }
 
 /** Событие в истории заказа. */
@@ -484,6 +488,7 @@ export type Order = {
     telegram_url: string | null
     email: string | null
     phone: string | null
+    history: OrderHistoryEvent[]
 
     currency: string
     comment: string | null
@@ -503,9 +508,11 @@ export type Order = {
     created_at: string
     updated_at: string
 
+    customer: OrderCustomer
     items: OrderItem[]
-    payments: OrderPayment[]
-    shipments: OrderShipment[]
+    payment: OrderPayment | null
+    shipment: OrderShipment[]
+    delivery: OrderDelivery | null
 }
 
 /** Данные статистики заказов. */

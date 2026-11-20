@@ -19,11 +19,11 @@ import {
     CardTitle,
 } from '@/components/ui/card'
 
-import type { OrderCustomer } from '@/types/index.d'
+import type { Order } from '@/types/index.d'
 
 interface OrderCustomerProps {
     /** Контактные данные покупателя. */
-    customer: OrderCustomer
+    order: Order
 
     /** Адрес доставки из заказа. */
     address?: string | null
@@ -51,17 +51,19 @@ async function copyToClipboard(
 /**
  * Отображает карточку покупателя и его контактные данные.
  *
- * @param customer Данные покупателя.
+ * @param order Данные заказа.
  * @param address Адрес доставки.
  * @returns Карточка с информацией о клиенте.
  */
 export function OrderCustomer({
-    customer,
+    order,
     address,
 }: OrderCustomerProps) {
-    const telegramUrl = customer.telegramUsername
-        ? `https://t.me/${encodeURIComponent(customer.telegramUsername)}`
+
+    const telegramUrl = order.telegram_username
+        ? `https://t.me/${encodeURIComponent(order.telegram_username)}`
         : null
+
 
     return (
         <Card>
@@ -81,11 +83,11 @@ export function OrderCustomer({
 
                     <div className="min-w-0 space-y-1">
                         <p className="truncate font-semibold">
-                            {customer.name || 'Имя не указано'}
+                            {order.customer_name || 'Имя не указано'}
                         </p>
 
                         <p className="text-xs text-muted-foreground">
-                            ID покупателя: #{customer.id}
+                            ID покупателя: #{order?.customer?.id || "Не зарегистрирован"}
                         </p>
                     </div>
                 </div>
@@ -102,8 +104,8 @@ export function OrderCustomer({
                                 </p>
 
                                 <p className="truncate text-sm font-medium">
-                                    {customer.telegramUsername
-                                        ? `@${customer.telegramUsername}`
+                                    {order.telegram_username
+                                        ? `${order.telegram_username}`
                                         : 'Не указан'}
                                 </p>
                             </div>
@@ -139,12 +141,12 @@ export function OrderCustomer({
                                 </p>
 
                                 <p className="truncate text-sm font-medium">
-                                    {customer.email || 'Не указан'}
+                                    {order.email || 'Не указан'}
                                 </p>
                             </div>
                         </div>
 
-                        {customer.email && (
+                        {order.email && (
                             <Button
                                 asChild
                                 size="icon"
@@ -152,7 +154,7 @@ export function OrderCustomer({
                                 className="size-8 shrink-0"
                             >
                                 <a
-                                    href={`mailto:${customer.email}`}
+                                    href={`mailto:${order.email}`}
                                     aria-label="Написать на email"
                                 >
                                     <ExternalLink className="size-4" />
@@ -172,12 +174,12 @@ export function OrderCustomer({
                                 </p>
 
                                 <p className="truncate text-sm font-medium">
-                                    {customer.phone || 'Не указан'}
+                                    {order.phone || 'Не указан'}
                                 </p>
                             </div>
                         </div>
 
-                        {customer.phone && (
+                        {order.phone && (
                             <Button
                                 asChild
                                 size="icon"
@@ -185,7 +187,7 @@ export function OrderCustomer({
                                 className="size-8 shrink-0"
                             >
                                 <a
-                                    href={`tel:${customer.phone}`}
+                                    href={`tel:${order.phone}`}
                                     aria-label="Позвонить покупателю"
                                 >
                                     <Phone className="size-4" />
@@ -212,12 +214,12 @@ export function OrderCustomer({
 
                 {/* Копирование контактных данных */}
                 <div className="flex flex-wrap gap-2 border-t pt-4">
-                    {customer.telegramUsername && (
+                    {order.telegram_username && (
                         <Button
                             size="sm"
                             variant="outline"
                             onClick={() => copyToClipboard(
-                                `@${customer.telegramUsername}`,
+                                `@${order.telegram_username}`,
                                 'Telegram',
                             )}
                         >
@@ -226,12 +228,12 @@ export function OrderCustomer({
                         </Button>
                     )}
 
-                    {customer.email && (
+                    {order.email && (
                         <Button
                             size="sm"
                             variant="outline"
                             onClick={() => copyToClipboard(
-                                customer.email!,
+                                order.email!,
                                 'Email',
                             )}
                         >
@@ -240,12 +242,12 @@ export function OrderCustomer({
                         </Button>
                     )}
 
-                    {customer.phone && (
+                    {order.phone && (
                         <Button
                             size="sm"
                             variant="outline"
                             onClick={() => copyToClipboard(
-                                customer.phone!,
+                                order.phone!,
                                 'Телефон',
                             )}
                         >

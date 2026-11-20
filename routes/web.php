@@ -70,6 +70,7 @@ Route::middleware(['auth', 'admin'])
             ->group(function () {
                 Route::get('/', 'index')->name('index');
                 Route::post('/', 'store')->name('store');
+                Route::get('/{order}', 'show')->name('show');
             });
 
 
