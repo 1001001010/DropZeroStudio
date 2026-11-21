@@ -36,11 +36,9 @@ export default function OrdersIndexPage({
         (order) => order.status === 'completed',
     ).length
 
-    // Сумма заказов, у которых есть хотя бы один успешный платёж.
+    // Сумма заказов с успешно оплаченным платежом.
     const revenue = orders
-        .filter((order) =>
-            order.payments.some((payment) => payment.status === 'paid'),
-        )
+        .filter((order) => order.payment?.status === 'paid')
         .reduce((sum, order) => sum + Number(order.total), 0)
 
     return (

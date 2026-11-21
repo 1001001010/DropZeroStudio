@@ -278,7 +278,7 @@ function DropRow({
             {/* Тираж */}
             <TableCell>
                 <span className="font-medium tabular-nums">
-                    {drop.edition_size.toLocaleString('ru-RU')} шт.
+                    {new Intl.NumberFormat('ru-RU').format(drop.edition_size)} шт.
                 </span>
             </TableCell>
 

@@ -5,8 +5,9 @@ namespace App\Models;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 
 class OrderPayment extends Model
 {
@@ -24,6 +25,16 @@ class OrderPayment extends Model
         'transaction_id',
         'paid_at',
         'refunded_at',
+
+        // Чек банковского перевода.
+        'receipt_path',
+        'receipt_name',
+        'receipt_mime',
+        'receipt_size',
+
+        // Администратор, подтвердивший оплату.
+        'confirmed_by',
+
         'metadata',
     ];
 
@@ -36,12 +47,13 @@ class OrderPayment extends Model
     {
         return [
             'amount' => 'decimal:2',
-
             'status' => PaymentStatus::class,
             'method' => PaymentMethod::class,
 
             'paid_at' => 'datetime',
             'refunded_at' => 'datetime',
+
+            'receipt_size' => 'integer',
 
             'metadata' => 'array',
         ];
@@ -49,8 +61,6 @@ class OrderPayment extends Model
 
     /**
      * Заказ, к которому относится платёж.
-     *
-     * @return BelongsTo<Order, $this>
      */
     public function order(): BelongsTo
     {
@@ -58,15 +68,20 @@ class OrderPayment extends Model
     }
 
     /**
-     * Файлы, связанные с этим платежом.
+     * Администратор, подтвердивший оплату.
+     */
+    public function confirmer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'confirmed_by');
+    }
+
+    /**
+     * Файлы, прикреплённые к платежу.
      *
      * @return HasMany<OrderAttachment, $this>
      */
     public function attachments(): HasMany
     {
-        return $this->hasMany(
-            OrderAttachment::class,
-            'order_payment_id',
-        );
+        return $this->hasMany(OrderAttachment::class);
     }
 }

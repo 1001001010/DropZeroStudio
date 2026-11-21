@@ -7,94 +7,60 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     /**
      * Создание таблицы платежей.
+     *
+     * Один заказ — один платёж.
      */
     public function up(): void
     {
         Schema::create('order_payments', function (Blueprint $table) {
             $table->id();
 
-            /*
-             * Связь с заказом.
-             *
-             * У заказа может быть несколько платежей:
-             * - первоначальная оплата;
-             * - повторная оплата;
-             * - частичная оплата;
-             * - возврат.
-             */
+            // Связь с заказом. Один заказ может иметь только один платёж.
             $table->foreignId('order_id')
+                ->unique()
                 ->constrained('orders')
                 ->cascadeOnDelete();
 
-            /*
-             * Сумма и валюта платежа.
-             */
+            // Сумма и валюта платежа.
             $table->decimal('amount', 12, 2);
             $table->char('currency', 3)->default('RUB');
 
-            /*
-             * Статус платежа.
-             *
-             * pending
-             * paid
-             * failed
-             * refunded
-             * partially_refunded
-             */
+            // Статус платежа.
             $table->string('status', 32)->default('pending');
 
-            /*
-             * Способ оплаты.
-             *
-             * Например:
-             * telegram
-             * bank_transfer
-             * card
-             * cash
-             * crypto
-             */
+            // Способ оплаты.
+            // Например: bank_transfer, card, cash, crypto.
             $table->string('method', 64)->nullable();
 
-            /*
-             * Платёжный провайдер.
-             *
-             * Например:
-             * manual
-             * telegram_payments
-             * yookassa
-             * stripe
-             */
+            // Платёжный провайдер.
+            // Например: manual, yookassa, stripe.
             $table->string('provider', 64)->nullable();
 
-            /*
-             * Идентификатор транзакции
-             * во внешней платёжной системе.
-             */
-            $table->string('transaction_id', 255)->nullable()->unique();
+            // ID транзакции, если имеется.
+            $table->string('transaction_id', 255)->nullable();
 
-            /*
-             * Даты проведения платежа и возврата.
-             */
+            // Даты проведения платежа и возврата.
             $table->timestamp('paid_at')->nullable();
             $table->timestamp('refunded_at')->nullable();
 
-            /*
-             * Дополнительные данные провайдера.
-             *
-             * Сюда можно сохранить:
-             * - ответ API;
-             * - идентификатор платежа;
-             * - данные проверки;
-             * - дополнительные параметры.
-             */
+            // Чек перевода.
+            $table->string('receipt_path')->nullable();
+            $table->string('receipt_name')->nullable();
+            $table->string('receipt_mime', 100)->nullable();
+            $table->unsignedBigInteger('receipt_size')->nullable();
+
+            // Администратор, подтвердивший оплату.
+            $table->foreignId('confirmed_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
+            // Дополнительные данные платежа.
             $table->json('metadata')->nullable();
 
             $table->timestamps();
 
-            /*
-             * Индексы.
-             */
-            $table->index('order_id');
+            // Индексы.
             $table->index('status');
             $table->index('method');
             $table->index('provider');

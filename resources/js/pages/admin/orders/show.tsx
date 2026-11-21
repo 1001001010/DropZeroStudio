@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react'
-import { ArrowLeft, Package } from 'lucide-react'
+import { ArrowLeft, ListOrderedIcon } from 'lucide-react'
 
 import { AdminNav } from '@/components/admin/admin-nav'
 
@@ -50,7 +50,7 @@ export default function OrderShowPage({ order }: OrderShowPageProps) {
                         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                             <div className="space-y-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <Package className="size-5 text-muted-foreground" />
+                                    <ListOrderedIcon className="size-5 text-muted-foreground" />
 
                                     <h1 className="text-2xl font-semibold tracking-tight">
                                         {order.number}
@@ -96,6 +96,7 @@ export default function OrderShowPage({ order }: OrderShowPageProps) {
                             />
 
                             <OrderPayment
+                                orderId={order.id}
                                 payment={order.payment}
                                 total={Number(order.total)}
                                 currency={order.currency}

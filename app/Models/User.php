@@ -89,4 +89,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(OrderAttachment::class, 'uploaded_by');
     }
+
+    public function confirmedPayments(): HasMany
+    {
+        return $this->hasMany(OrderPayment::class, 'confirmed_by');
+    }
 }

@@ -10,6 +10,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 
 import type { OrderItem } from '@/types/index.d'
+import { Badge } from '@/components/ui/badge'
 
 interface OrderItemsProps {
     /** Список товаров, входящих в заказ. */
@@ -100,6 +101,10 @@ export function OrderItems({
                                         <p className="font-medium">
                                             {item.product_name}
                                         </p>
+
+                                        <Badge variant="secondary" className="font-mono text-xs">
+                                            {item.product_code}
+                                        </Badge>
 
                                         <p className="text-sm text-muted-foreground">
                                             {item.drop.name}

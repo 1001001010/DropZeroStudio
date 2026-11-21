@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
@@ -33,7 +34,8 @@ class Order extends Model
         'comment',
         'admin_note',
         'created_by',
-        'number'
+        'number',
+        'status',
     ];
 
     /**
@@ -103,16 +105,6 @@ class Order extends Model
     }
 
     /**
-     * Файлы, прикреплённые к заказу.
-     *
-     * @return HasMany<OrderAttachment, $this>
-     */
-    public function attachments(): HasMany
-    {
-        return $this->hasMany(OrderAttachment::class);
-    }
-
-    /**
      * Администратор, создавший заказ.
      *
      * @return BelongsTo<User, $this>
@@ -123,16 +115,18 @@ class Order extends Model
     }
 
     /**
-     * Проверить, оплачен ли заказ.
+     * Проверить, есть ли у заказа успешный платёж.
      *
-     * Учитываются успешные платежи и частичные возвраты.
-     * Проверка полной оплаты относительно суммы заказа
-     * будет выполняться отдельным методом сервиса.
+     * Учитываются оплаченные платежи и платежи
+     * с частичным возвратом.
      */
     public function hasSuccessfulPayment(): bool
     {
-        return $this->payments()
-            ->whereIn('status', ['paid', 'partially_refunded'])
+        return $this->payment()
+            ->whereIn('status', [
+                PaymentStatus::Paid,
+                PaymentStatus::PartiallyRefunded,
+            ])
             ->exists();
     }
 }

@@ -437,25 +437,63 @@ export interface OrderItem {
     toy: Toy
 }
 
-/** Информация об оплате заказа. */
+export interface StoreOrderPaymentFormData {
+    amount: string
+    currency: string
+    status: PaymentStatus
+    method: string
+    provider: string
+    transaction_id: string
+    paid_at: string
+    metadata: string
+    receipt: File | null
+}
+
+/**
+ * Информация об оплате заказа.
+ *
+ * Один заказ — один платёж.
+ */
 export type OrderPayment = {
     id: number
     order_id: number
 
+    // Основные данные платежа.
     amount: number | string
     currency: string
     status: PaymentStatus
-    method: string
+    method: string | null
     provider: string | null
     transaction_id: string | null
+
+    // Даты оплаты и возврата.
     paid_at: string | null
     refunded_at: string | null
 
+    // Информация о чеке банковского перевода.
+    receipt_path: string | null
+    receipt_name: string | null
+    receipt_mime: string | null
+    receipt_size: number | null
+    receipt_url: string | null
+
+    // Администратор, подтвердивший оплату.
+    confirmed_by: number | null
+
+    // Дополнительные данные.
     metadata: Record<string, unknown> | null
 
     created_at: string
     updated_at: string
+
+    // Администратор, подтвердивший оплату.
+    confirmer?: {
+        id: number
+        name: string
+        email?: string
+    } | null
 }
+
 /** Информация о доставке заказа. */
 export interface OrderDelivery {
     status: DeliveryStatus
@@ -468,13 +506,22 @@ export interface OrderDelivery {
     OrderShipment: OrderShipment
 }
 
-/** Событие в истории заказа. */
+/**
+ * Событие изменения статуса заказа.
+ */
 export interface OrderHistoryEvent {
     id: number
-    title: string
-    description: string | null
-    createdAt: string
-    actor: string | null
+    old_status: OrderStatus | null
+    new_status: OrderStatus
+    comment: string | null
+    changed_by: number | null
+    created_at: string
+
+    changer?: {
+        id: number
+        name: string
+        email?: string
+    } | null
 }
 
 /** Полная информация о заказе для интерфейса. */
@@ -511,7 +558,7 @@ export type Order = {
     customer: OrderCustomer
     items: OrderItem[]
     payment: OrderPayment | null
-    shipment: OrderShipment[]
+    shipment: OrderShipment | null
     delivery: OrderDelivery | null
 }
 

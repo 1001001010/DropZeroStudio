@@ -142,25 +142,19 @@ function formatCurrency(
     }).format(amount)
 }
 
-/** Форматирует дату и время. */
-function formatDate(value: string | null): string {
-    if (!value) {
-        return '—'
-    }
-
-    const date = new Date(value)
-
-    if (Number.isNaN(date.getTime())) {
-        return '—'
-    }
+/**
+ * Форматирует дату в едином часовом поясе.
+ * Это предотвращает различия между SSR и браузером.
+ */
+const formatDate = (date: string | null): string => {
+    if (!date) return 'Не указана'
 
     return new Intl.DateTimeFormat('ru-RU', {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(date)
+        timeZone: 'UTC',
+    }).format(new Date(date))
 }
 
 /** Нормализует строку для поиска. */
@@ -191,33 +185,6 @@ function matchesSearch(order: Order, query: string): boolean {
 }
 
 /**
- * Возвращает статус самой последней записи.
- * Сортировка выполняется по дате создания, затем по ID.
- */
-function getLatestStatus<S extends string>(
-    records: Array<{
-        id: number
-        status: S
-        created_at: string
-    }>,
-    fallback: S,
-): S {
-    if (records.length === 0) {
-        return fallback
-    }
-
-    const latestRecord = [...records].sort((first, second) => {
-        const dateDifference =
-            new Date(second.created_at).getTime() -
-            new Date(first.created_at).getTime()
-
-        return dateDifference || second.id - first.id
-    })[0]
-
-    return latestRecord.status
-}
-
-/**
  * Возвращает статус оплаты заказа.
  *
  * Если платёж ещё не создан, возвращает pending.
@@ -230,11 +197,10 @@ function getPaymentStatus(
 
 /** Определяет статус доставки заказа. */
 function getShipmentStatus(
-    shipments: Order['shipments'],
+    shipment: Order['shipment'],
 ): ShipmentStatus {
-    return getLatestStatus<ShipmentStatus>(shipments, 'not_shipped')
+    return shipment?.status ?? 'not_shipped'
 }
-
 /** Возвращает название позиции заказа для отображения. */
 function getItemTitle(item: Order['items'][number]): string {
     return item.skin_name || item.product_name || item.drop_name || 'Фигурка'
@@ -246,7 +212,6 @@ function getItemTitle(item: Order['items'][number]): string {
 
 /** Таблица заказов с поиском и фильтрацией по статусу. */
 export function OrdersTable({ orders }: OrdersTableProps) {
-    console.log(orders)
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
 
@@ -373,13 +338,14 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 
 /** Отдельная строка таблицы заказов. */
 function OrderRow({ order }: { order: Order }) {
+    console.log(order)
     const orderStatus = ORDER_STATUS_CONFIG[order.status]
 
     const paymentStatus =
         PAYMENT_STATUS_CONFIG[getPaymentStatus(order.payment)]
 
     const shipmentStatus =
-        SHIPMENT_STATUS_CONFIG[getShipmentStatus(order.shipments)]
+        SHIPMENT_STATUS_CONFIG[getShipmentStatus(order.shipment)]
 
     const itemCount = order.items.reduce(
         (total, item) => total + item.quantity,

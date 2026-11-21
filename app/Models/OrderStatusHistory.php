@@ -21,12 +21,13 @@ class OrderStatusHistory extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'order_id',
         'old_status',
         'new_status',
         'comment',
         'changed_by',
+        'created_at',
     ];
-
     /**
      * Преобразование типов атрибутов.
      *

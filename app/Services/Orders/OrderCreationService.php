@@ -6,6 +6,8 @@ use App\Models\Drop;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Toy;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -17,11 +19,12 @@ class OrderCreationService
     }
 
     /**
-     * Создать заказ и добавить в него выбранные фигурки.
+     * Создаёт заказ, добавляет выбранные фигурки
+     * и записывает первое событие в историю.
      */
     public function create(array $data, ?int $createdBy = null): Order
     {
-        return DB::transaction(function () use ($data, $createdBy) {
+        return DB::transaction(function () use ($data, $createdBy): Order {
             // Создаём заказ с временным номером.
             $order = Order::create([
                 'number' => $this->orderNumberService->temporary(),
@@ -37,6 +40,7 @@ class OrderCreationService
                 'comment' => $data['comment'] ?? null,
                 'admin_note' => $data['admin_note'] ?? null,
 
+                'status' => 'pending',
                 'created_by' => $createdBy,
 
                 'delivery_price' => 0,
@@ -48,13 +52,8 @@ class OrderCreationService
             $subtotal = 0;
 
             foreach ($data['items'] as $index => $item) {
+                // Получаем Drop вместе с его скином.
                 $drop = Drop::with('skin')->find($item['drop_id']);
-
-                if (!$drop || !$drop->skin || $drop->skin->trashed()) {
-                    throw ValidationException::withMessages([
-                        "items.{$index}.drop_id" => 'Выбранный Drop или его скин недоступен.',
-                    ]);
-                }
 
                 if (!$drop || !$drop->skin || $drop->skin->trashed()) {
                     throw ValidationException::withMessages([
@@ -65,6 +64,7 @@ class OrderCreationService
 
                 $quantity = (int) $item['quantity'];
 
+                // Находим фигурки с блокировкой выбранных записей.
                 $toys = $this->findToys(
                     $drop,
                     $item,
@@ -72,7 +72,7 @@ class OrderCreationService
                     $index,
                 );
 
-                // Цена фиксируется на момент создания заказа.
+                // Фиксируем цену на момент создания заказа.
                 $unitPrice = (float) $drop->price;
 
                 foreach ($toys as $toy) {
@@ -102,18 +102,27 @@ class OrderCreationService
                 }
             }
 
-            // Сохраняем итоговую стоимость.
+            // Сохраняем итоговую стоимость заказа.
             $order->subtotal = $subtotal;
             $order->delivery_price = 0;
             $order->discount = 0;
             $order->total = $subtotal;
 
             $order->save();
+
             // Заменяем временный номер постоянным.
             $order->update([
                 'number' => $this->orderNumberService->generate(
                     $order->id,
                 ),
+            ]);
+
+            // Создаём первое событие истории заказа.
+            $order->history()->create([
+                'old_status' => null,
+                'new_status' => $order->status,
+                'comment' => 'Заказ создан',
+                'changed_by' => $createdBy,
             ]);
 
             return $order->load([
@@ -124,17 +133,23 @@ class OrderCreationService
     }
 
     /**
-     * Найти фигурки в соответствии с режимом выбора.
+     * Находит фигурки в соответствии с выбранным режимом.
+     *
+     * Используется внутри транзакции, чтобы заблокировать
+     * выбранные записи на время создания заказа.
+     *
+     * @return Collection<int, Toy>
      */
     private function findToys(
         Drop $drop,
         array $item,
         int $quantity,
         int $index,
-    ) {
+    ): Collection {
         $query = Toy::query()
             ->where('drop_id', $drop->id)
-            ->where('status', 'available');
+            ->where('status', 'available')
+            ->lockForUpdate();
 
         return match ($item['selection_mode']) {
             'random' => $this->findRandomToys(
@@ -145,7 +160,9 @@ class OrderCreationService
 
             'number' => $this->findToyByNumber(
                 $query,
-                $item['toy_number'] ?? null,
+                isset($item['toy_number'])
+                ? (int) $item['toy_number']
+                : null,
                 $index,
             ),
 
@@ -164,12 +181,14 @@ class OrderCreationService
 
     /**
      * Случайный выбор доступных фигурок.
+     *
+     * @return Collection<int, Toy>
      */
     private function findRandomToys(
-        $query,
+        Builder $query,
         int $quantity,
         int $index,
-    ) {
+    ): Collection {
         $toys = $query
             ->inRandomOrder()
             ->limit($quantity)
@@ -187,12 +206,14 @@ class OrderCreationService
 
     /**
      * Поиск фигурки по номеру.
+     *
+     * @return Collection<int, Toy>
      */
     private function findToyByNumber(
-        $query,
+        Builder $query,
         ?int $number,
         int $index,
-    ) {
+    ): Collection {
         $toy = $query
             ->where('number', $number)
             ->first();
@@ -209,12 +230,14 @@ class OrderCreationService
 
     /**
      * Поиск фигурки по коду.
+     *
+     * @return Collection<int, Toy>
      */
     private function findToyByCode(
-        $query,
+        Builder $query,
         ?string $code,
         int $index,
-    ) {
+    ): Collection {
         $toy = $query
             ->where('code', $code)
             ->first();

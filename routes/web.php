@@ -5,7 +5,7 @@ use App\Http\Controllers\DropController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\SkinController;
-use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\{OrderController, OrderPaymentController};
 use App\Http\Controllers\ToyController;
 use Illuminate\Support\Facades\Route;
 
@@ -60,19 +60,41 @@ Route::middleware(['auth', 'admin'])
 
 
         /*
-        |--------------------------------------------------------------------------
-        | Управление заказами
-        |--------------------------------------------------------------------------
-        */
+ |--------------------------------------------------------------------------
+ | Управление заказами
+ |--------------------------------------------------------------------------
+ */
         Route::controller(OrderController::class)
             ->prefix('orders')
             ->name('orders.')
             ->group(function () {
                 Route::get('/', 'index')->name('index');
                 Route::post('/', 'store')->name('store');
+
                 Route::get('/{order}', 'show')->name('show');
+
+                // Управление оплатой заказа.
+                Route::post('/{order}/payment', 'storePayment')
+                    ->name('payments.store');
+
+                Route::put('/{order}/payment', 'updatePayment')
+                    ->name('payments.update');
             });
 
+        Route::get(
+            '/orders/{order}/payment/receipt',
+            [OrderController::class, 'downloadPaymentReceipt'],
+        )->name('orders.payments.receipt');
+
+        Route::post('/{order}/payment', [
+            OrderPaymentController::class,
+            'storePayment',
+        ])->name('payments.store');
+
+        Route::put('/{order}/payment', [
+            OrderPaymentController::class,
+            'updatePayment',
+        ])->name('payments.update');
 
 
         /*

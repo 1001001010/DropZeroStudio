@@ -3,7 +3,7 @@ import {
     CheckCircle2,
     Clock3,
     CreditCard,
-    ExternalLink,
+    // ExternalLink,
     FileJson,
     RefreshCcw,
     XCircle,
@@ -19,16 +19,19 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+// import {
+//     Collapsible,
+//     CollapsibleContent,
+//     CollapsibleTrigger,
+// } from '@/components/ui/collapsible'
 import { Separator } from '@/components/ui/separator'
+import { OrderPaymentDialog } from '@/components/admin/orders/order-payment-dialog'
+import { FileText, Image as ImageIcon, Download } from 'lucide-react'
 
 import type { PaymentStatus, OrderPayment as OrderPaymentType } from '@/types/index.d'
 
 interface OrderPaymentProps {
+    orderId: number
     payment: OrderPaymentType | null
     total: number
     currency: string
@@ -115,6 +118,7 @@ async function copyTransactionId(transactionId: string): Promise<void> {
  * и сумму заказа без технических данных платежа.
  */
 export function OrderPayment({
+    orderId,
     payment,
     total,
     currency,
@@ -127,22 +131,31 @@ export function OrderPayment({
     const StatusIcon = status.icon
 
     // Технический ответ доступен только при наличии платежа.
-    const formattedResponse = payment?.metadata
-        ? JSON.stringify(payment.metadata, null, 2)
-        : null
+    // const formattedResponse = payment?.metadata
+    //     ? JSON.stringify(payment.metadata, null, 2)
+    //     : null
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-3">
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                     <CreditCard className="size-4 text-muted-foreground" />
                     Оплата
                 </CardTitle>
 
-                <Badge variant={status.variant} className="gap-1.5">
-                    <StatusIcon className="size-3.5" />
-                    {status.label}
-                </Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={status.variant} className="gap-1.5">
+                        <StatusIcon className="size-3.5" />
+                        {status.label}
+                    </Badge>
+
+                    <OrderPaymentDialog
+                        orderId={orderId}
+                        payment={payment}
+                        total={total}
+                        currency={currency}
+                    />
+                </div>
             </CardHeader>
 
             <CardContent className="space-y-5">
@@ -222,7 +235,61 @@ export function OrderPayment({
                     </div>
                 ) : (
                     <>
+                        {/* Квитанция об оплате */}
                         <Separator />
+
+                        <div className="space-y-3">
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium">
+                                    Квитанция об оплате
+                                </p>
+
+                                <p className="text-xs text-muted-foreground">
+                                    Загруженный документ, подтверждающий оплату.
+                                </p>
+                            </div>
+
+                            {payment.receipt_url ? (
+                                <div className="flex items-center gap-3 rounded-lg border p-3">
+                                    {payment.receipt_mime?.startsWith('image/') ? (
+                                        <ImageIcon className="size-5 shrink-0 text-muted-foreground" />
+                                    ) : (
+                                        <FileText className="size-5 shrink-0 text-muted-foreground" />
+                                    )}
+
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-medium">
+                                            {payment.receipt_name || 'Квитанция'}
+                                        </p>
+
+                                        <p className="text-xs text-muted-foreground">
+                                            {payment.receipt_mime === 'application/pdf'
+                                                ? 'PDF-документ'
+                                                : 'Изображение'}
+                                        </p>
+                                    </div>
+
+                                    <Button
+                                        asChild
+                                        size="sm"
+                                        variant="outline"
+                                    >
+                                        <a
+                                            href={payment.receipt_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            <Download className="mr-2 size-4" />
+                                            Открыть
+                                        </a>
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+                                    Квитанция не загружена.
+                                </div>
+                            )}
+                        </div>
 
                         {/* Идентификатор транзакции */}
                         <div className="space-y-2">
@@ -258,7 +325,7 @@ export function OrderPayment({
                         <Separator />
 
                         {/* Исходные данные платёжной системы */}
-                        <Collapsible>
+                        {/* <Collapsible>
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="space-y-1">
                                     <p className="text-sm font-medium">
@@ -289,7 +356,7 @@ export function OrderPayment({
                                     </div>
                                 )}
                             </CollapsibleContent>
-                        </Collapsible>
+                        </Collapsible> */}
                     </>
                 )}
             </CardContent>

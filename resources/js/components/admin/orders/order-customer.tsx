@@ -61,16 +61,15 @@ export function OrderCustomer({
 }: OrderCustomerProps) {
 
     const telegramUrl = order.telegram_username
-        ? `https://t.me/${encodeURIComponent(order.telegram_username)}`
+        ? `https://t.me/${order.telegram_username.replace(/^@/, '')}`
         : null
-
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                     <UserRound className="size-4 text-muted-foreground" />
-                    Покупатель
+                    Заказчик
                 </CardTitle>
             </CardHeader>
 
