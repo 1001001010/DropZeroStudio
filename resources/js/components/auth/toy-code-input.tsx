@@ -1,5 +1,5 @@
 
-import type { ToyCodeInputProps } from '@/types/index.d'
+import type { ToyCodeInputProps } from '@/types'
 
 const INPUT_CLASS_NAME = `
     h-16 w-14

@@ -11,7 +11,7 @@ import {
     CardContent,
 } from '@/components/ui/card'
 
-import { OrdersStats as OrdersStatsType } from '@/types/index.d'
+import { OrdersStats as OrdersStatsType } from '@/types'
 
 export function OrdersStats({
     total,

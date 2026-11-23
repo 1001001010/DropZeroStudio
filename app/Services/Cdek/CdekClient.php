@@ -6,6 +6,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Illuminate\Http\Client\Response;
 
 class CdekClient
 {
@@ -100,7 +101,6 @@ class CdekClient
     {
         return $this->request('GET', $endpoint, $query);
     }
-
     /**
      * Выполняет POST-запрос к API СДЭК.
      *
@@ -149,5 +149,55 @@ class CdekClient
         }
 
         return $result;
+    }
+
+    /**
+     * Загружает файл с файлового сервера СДЭК.
+     *
+     * Запрос выполняется с OAuth-авторизацией.
+     *
+     * @throws ConnectionException
+     * @throws RuntimeException
+     */
+    public function getFile(string $path): Response
+    {
+        $fileBaseUrl = rtrim(
+            (string) config('services.cdek.file_url'),
+            '/'
+        );
+
+        if ($fileBaseUrl === '') {
+            throw new RuntimeException(
+                'CDEK file server URL is not configured.'
+            );
+        }
+
+        // Разрешаем загружать только фотографии офисов СДЭК.
+        if (
+            !preg_match(
+                '#\Afile-storage/web/object/office-photo/[a-f0-9-]{36}\z#i',
+                ltrim($path, '/')
+            )
+        ) {
+            throw new RuntimeException(
+                'Invalid CDEK file path.'
+            );
+        }
+
+        $url = $fileBaseUrl . '/' . ltrim($path, '/');
+
+        $response = Http::withToken($this->getAccessToken())
+            ->accept('image/*')
+            ->timeout(30)
+            ->get($url);
+
+        if ($response->failed()) {
+            throw new RuntimeException(
+                "CDEK file server error ({$response->status()}): "
+                . $response->body()
+            );
+        }
+
+        return $response;
     }
 }

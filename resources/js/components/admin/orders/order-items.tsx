@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 
-import type { OrderItem } from '@/types/index.d'
+import type { OrderItem } from '@/types'
 import { Badge } from '@/components/ui/badge'
 
 interface OrderItemsProps {

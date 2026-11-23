@@ -18,6 +18,7 @@ import type {
     Skin,
     PageProps
 } from "@/types/index"
+import MainLayout from '@/layouts/MainLayout'
 
 
 export default function CollectionsPage({
@@ -29,25 +30,27 @@ export default function CollectionsPage({
 }>) {
     return (
         <>
-            <Head title="Скины" />
-            <main className="min-h-screen bg-background">
-                <AdminNav />
+            <MainLayout>
+                <Head title="Скины" />
+                <main className="min-h-screen bg-background">
+                    <AdminNav />
 
-                <div className="space-y-8 p-6 lg:p-8">
-                    <SkinHeader />
+                    <div className="space-y-8 p-6 lg:p-8">
+                        <SkinHeader />
 
-                    <SkinStats
-                        total={stats.total}
-                        active={stats.active}
-                        inactive={stats.inactive}
-                        deleted={stats.deleted}
-                    />
+                        <SkinStats
+                            total={stats.total}
+                            active={stats.active}
+                            inactive={stats.inactive}
+                            deleted={stats.deleted}
+                        />
 
-                    <SkinTable
-                        skins={skins}
-                    />
-                </div>
-            </main>
+                        <SkinTable
+                            skins={skins}
+                        />
+                    </div>
+                </main>
+            </MainLayout>
         </>
     )
 }

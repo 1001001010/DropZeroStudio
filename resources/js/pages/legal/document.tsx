@@ -1,4 +1,5 @@
 import { LegalDocumentLayout } from '@/components/admin/legal/legal-document-layout'
+import MainLayout from '@/layouts/MainLayout'
 
 type Props = {
     document: {
@@ -13,12 +14,14 @@ type Props = {
 
 export default function Document({ document }: Props) {
     return (
-        <LegalDocumentLayout
-            title={document.title}
-            route={document.route}
-            content={document.content}
-            version={document.version}
-            publishedAt={document.published_at}
-        />
+        <MainLayout>
+            <LegalDocumentLayout
+                title={document.title}
+                route={document.route}
+                content={document.content}
+                version={document.version}
+                publishedAt={document.published_at}
+            />
+        </MainLayout>
     )
 }

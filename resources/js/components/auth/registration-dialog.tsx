@@ -23,7 +23,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { EmailCodeInput } from '@/components/auth/email-code-input'
 import { useEmailCode } from '@/hooks/auth/use-email-code'
 
-import type { RegistrationDialogProps } from '@/types/index.d'
+import type { RegistrationDialogProps } from '@/types'
 
 /**
  * Возвращает CSRF-токен Laravel из meta-тега страницы.

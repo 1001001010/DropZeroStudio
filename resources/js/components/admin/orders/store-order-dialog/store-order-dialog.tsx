@@ -51,7 +51,7 @@ import type {
     OrderItemSelectionMode,
     StoreOrderFormData,
     StoreOrderItemData,
-} from '@/types/index.d'
+} from '@/types'
 
 interface StoreOrderDialogProps {
     drops?: OrderDropOption[]

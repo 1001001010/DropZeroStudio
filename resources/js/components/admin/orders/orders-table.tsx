@@ -24,7 +24,7 @@ import type {
     OrderStatus,
     PaymentStatus,
     ShipmentStatus,
-} from '@/types/index.d'
+} from '@/types'
 
 // =============================================================================
 // Types

@@ -9,7 +9,8 @@ import { OrdersTable } from '@/components/admin/orders/orders-table'
 import type {
     Order,
     OrderDropOption,
-} from '@/types/index.d'
+} from '@/types'
+import MainLayout from '@/layouts/MainLayout'
 
 interface OrdersIndexPageProps {
     orders: Order[]
@@ -43,24 +44,26 @@ export default function OrdersIndexPage({
 
     return (
         <>
-            <Head title="Заказы" />
+            <MainLayout>
+                <Head title="Заказы" />
 
-            <main className="min-h-screen bg-background">
-                <AdminNav />
+                <main className="min-h-screen bg-background">
+                    <AdminNav />
 
-                <div className="space-y-8 p-6 lg:p-8">
-                    <OrdersHeader drops={drops} />
+                    <div className="space-y-8 p-6 lg:p-8">
+                        <OrdersHeader drops={drops} />
 
-                    <OrdersStats
-                        total={total}
-                        active={active}
-                        completed={completed}
-                        revenue={revenue}
-                    />
+                        <OrdersStats
+                            total={total}
+                            active={active}
+                            completed={completed}
+                            revenue={revenue}
+                        />
 
-                    <OrdersTable orders={orders} />
-                </div>
-            </main>
+                        <OrdersTable orders={orders} />
+                    </div>
+                </main>
+            </MainLayout>
         </>
     )
 }

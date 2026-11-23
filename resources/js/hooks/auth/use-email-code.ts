@@ -7,7 +7,7 @@ import {
     type KeyboardEvent,
 } from 'react'
 
-import type { EmailVerificationCode } from '@/types/index.d'
+import type { EmailVerificationCode } from '@/types'
 
 const CODE_LENGTH = 6
 const INITIAL_SECONDS = 300

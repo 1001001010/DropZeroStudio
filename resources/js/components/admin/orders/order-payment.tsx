@@ -3,13 +3,15 @@ import {
     CheckCircle2,
     Clock3,
     CreditCard,
-    // ExternalLink,
+    Download,
     FileJson,
+    FileText,
+    Image as ImageIcon,
     RefreshCcw,
     XCircle,
 } from 'lucide-react'
 
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,16 +21,13 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
-// import {
-//     Collapsible,
-//     CollapsibleContent,
-//     CollapsibleTrigger,
-// } from '@/components/ui/collapsible'
 import { Separator } from '@/components/ui/separator'
 import { OrderPaymentDialog } from '@/components/admin/orders/order-payment-dialog'
-import { FileText, Image as ImageIcon, Download } from 'lucide-react'
 
-import type { PaymentStatus, OrderPayment as OrderPaymentType } from '@/types/index.d'
+import type {
+    PaymentStatus,
+    OrderPayment as OrderPaymentType,
+} from '@/types'
 
 interface OrderPaymentProps {
     orderId: number
@@ -77,6 +76,9 @@ const PAYMENT_STATUS_CONFIG: Record<
 
 /**
  * Форматирует дату и время.
+ *
+ * @param value Дата в строковом формате.
+ * @returns Отформатированная дата.
  */
 function formatDate(value: string): string {
     return new Intl.DateTimeFormat('ru-RU', {
@@ -90,6 +92,10 @@ function formatDate(value: string): string {
 
 /**
  * Форматирует денежную сумму.
+ *
+ * @param value Сумма платежа.
+ * @param currency Код валюты.
+ * @returns Отформатированная денежная сумма.
  */
 function formatCurrency(value: number, currency: string): string {
     return new Intl.NumberFormat('ru-RU', {
@@ -101,13 +107,22 @@ function formatCurrency(value: number, currency: string): string {
 
 /**
  * Копирует идентификатор транзакции в буфер обмена.
+ *
+ * @param transactionId Идентификатор транзакции.
  */
 async function copyTransactionId(transactionId: string): Promise<void> {
     try {
         await navigator.clipboard.writeText(transactionId)
-        toast.success('ID транзакции скопирован')
+
+        toast.add({
+            title: 'ID транзакции скопирован',
+            description: 'Идентификатор успешно скопирован в буфер обмена.',
+        })
     } catch {
-        toast.error('Не удалось скопировать ID транзакции')
+        toast.add({
+            title: 'Не удалось скопировать ID транзакции',
+            description: 'Проверьте разрешения браузера на доступ к буферу обмена.',
+        })
     }
 }
 
@@ -116,6 +131,11 @@ async function copyTransactionId(transactionId: string): Promise<void> {
  *
  * Если платёж ещё не создан, показывает ожидающий статус
  * и сумму заказа без технических данных платежа.
+ *
+ * @param orderId Идентификатор заказа.
+ * @param payment Данные платежа.
+ * @param total Общая сумма заказа.
+ * @param currency Валюта заказа.
  */
 export function OrderPayment({
     orderId,
@@ -129,11 +149,6 @@ export function OrderPayment({
         : PAYMENT_STATUS_CONFIG.pending
 
     const StatusIcon = status.icon
-
-    // Технический ответ доступен только при наличии платежа.
-    // const formattedResponse = payment?.metadata
-    //     ? JSON.stringify(payment.metadata, null, 2)
-    //     : null
 
     return (
         <Card>
@@ -323,40 +338,6 @@ export function OrderPayment({
                         </div>
 
                         <Separator />
-
-                        {/* Исходные данные платёжной системы */}
-                        {/* <Collapsible>
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium">
-                                        Данные платежа
-                                    </p>
-
-                                    <p className="text-xs text-muted-foreground">
-                                        Сохранённые технические данные в формате JSON.
-                                    </p>
-                                </div>
-
-                                <CollapsibleTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                        <ExternalLink className="size-3.5" />
-                                        Показать данные
-                                    </Button>
-                                </CollapsibleTrigger>
-                            </div>
-
-                            <CollapsibleContent className="pt-3">
-                                {formattedResponse ? (
-                                    <pre className="max-h-80 overflow-auto rounded-lg border bg-muted/50 p-3 text-xs leading-relaxed">
-                                        {formattedResponse}
-                                    </pre>
-                                ) : (
-                                    <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                                        Технические данные пока отсутствуют.
-                                    </div>
-                                )}
-                            </CollapsibleContent>
-                        </Collapsible> */}
                     </>
                 )}
             </CardContent>

@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { AdminNav } from '@/components/admin/admin-nav'
 import { LegalDocumentLayout } from '@/components/admin/legal/legal-document-layout'
+import MainLayout from '@/layouts/MainLayout'
 
 // Типы юридических документов и их редакций.
 type LegalVersion = {
@@ -285,263 +286,266 @@ export default function Index({
     if (!activeDocument) {
         return (
             <>
-                <AdminNav />
-                <Head title="Юридические документы" />
+                <MainLayout>
+                    <AdminNav />
+                    <Head title="Юридические документы" />
 
-                <div className="p-6">
-                    <p className="text-sm text-muted-foreground">
-                        Юридические документы не найдены.
-                    </p>
-                </div>
+                    <div className="p-6">
+                        <p className="text-sm text-muted-foreground">
+                            Юридические документы не найдены.
+                        </p>
+                    </div>
+                </MainLayout>
             </>
         )
     }
 
     return (
         <>
-            <AdminNav />
-            <Head title="Юридические документы" />
+            <MainLayout>
+                <AdminNav />
+                <Head title="Юридические документы" />
 
-            <div className="space-y-6 p-6">
-                {/* Заголовок */}
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>Главная</span>
-                        <ChevronRight className="size-4" />
-                        <span className="text-foreground">
-                            Юридические документы
-                        </span>
-                    </div>
+                <div className="space-y-6 p-6">
+                    {/* Заголовок */}
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>Главная</span>
+                            <ChevronRight className="size-4" />
+                            <span className="text-foreground">
+                                Юридические документы
+                            </span>
+                        </div>
 
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
-                            Юридические документы
-                        </h1>
+                        <div>
+                            <h1 className="text-2xl font-semibold tracking-tight">
+                                Юридические документы
+                            </h1>
 
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Управление содержимым, редакциями и публикацией документов.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Основная область */}
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-                    {/* Список документов */}
-                    <Card className="h-fit">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base">
-                                Документы
-                            </CardTitle>
-
-                            <p className="text-sm text-muted-foreground">
-                                Выберите документ для редактирования.
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Управление содержимым, редакциями и публикацией документов.
                             </p>
-                        </CardHeader>
+                        </div>
+                    </div>
 
-                        <CardContent className="space-y-1">
-                            {documents.map((document) => {
-                                const DocumentIcon =
-                                    documentIcons[document.slug] ?? FileText
+                    {/* Основная область */}
+                    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+                        {/* Список документов */}
+                        <Card className="h-fit">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base">
+                                    Документы
+                                </CardTitle>
 
-                                const isSelected =
-                                    activeDocumentId === document.id
+                                <p className="text-sm text-muted-foreground">
+                                    Выберите документ для редактирования.
+                                </p>
+                            </CardHeader>
 
-                                const documentDraft =
-                                    document.versions.some(
-                                        (version) =>
-                                            version.status === 'draft',
+                            <CardContent className="space-y-1">
+                                {documents.map((document) => {
+                                    const DocumentIcon =
+                                        documentIcons[document.slug] ?? FileText
+
+                                    const isSelected =
+                                        activeDocumentId === document.id
+
+                                    const documentDraft =
+                                        document.versions.some(
+                                            (version) =>
+                                                version.status === 'draft',
+                                        )
+
+                                    return (
+                                        <button
+                                            key={document.id}
+                                            type="button"
+                                            onClick={() => selectDocument(document)}
+                                            className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors ${isSelected
+                                                ? 'bg-accent text-accent-foreground'
+                                                : 'hover:bg-muted'
+                                                }`}
+                                        >
+                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-background">
+                                                <DocumentIcon className="size-4 text-muted-foreground" />
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-medium">
+                                                    {document.title}
+                                                </p>
+
+                                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                                    {document.current_version
+                                                        ? `Версия ${document.current_version.version}`
+                                                        : 'Не опубликован'}
+                                                </p>
+                                            </div>
+
+                                            {documentDraft && (
+                                                <span
+                                                    className="size-2 shrink-0 rounded-full bg-amber-500"
+                                                    title="Есть черновик"
+                                                />
+                                            )}
+
+                                            {document.current_version && (
+                                                <CheckCircle2 className="size-4 shrink-0 text-muted-foreground" />
+                                            )}
+                                        </button>
                                     )
-
-                                return (
-                                    <button
-                                        key={document.id}
-                                        type="button"
-                                        onClick={() => selectDocument(document)}
-                                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors ${isSelected
-                                            ? 'bg-accent text-accent-foreground'
-                                            : 'hover:bg-muted'
-                                            }`}
-                                    >
-                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-background">
-                                            <DocumentIcon className="size-4 text-muted-foreground" />
-                                        </div>
-
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-medium">
-                                                {document.title}
-                                            </p>
-
-                                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                                {document.current_version
-                                                    ? `Версия ${document.current_version.version}`
-                                                    : 'Не опубликован'}
-                                            </p>
-                                        </div>
-
-                                        {documentDraft && (
-                                            <span
-                                                className="size-2 shrink-0 rounded-full bg-amber-500"
-                                                title="Есть черновик"
-                                            />
-                                        )}
-
-                                        {document.current_version && (
-                                            <CheckCircle2 className="size-4 shrink-0 text-muted-foreground" />
-                                        )}
-                                    </button>
-                                )
-                            })}
-                        </CardContent>
-                    </Card>
-
-                    {/* Рабочая область */}
-                    <div className="min-w-0 space-y-6">
-                        {/* Информация о документе */}
-                        <Card>
-                            <CardContent className="space-y-5 p-6">
-                                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-                                            <Icon className="size-5 text-muted-foreground" />
-                                        </div>
-
-                                        <div className="min-w-0">
-                                            <h2 className="text-lg font-semibold">
-                                                {activeDocument.title}
-                                            </h2>
-
-                                            <a
-                                                href={activeDocument.route}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                                            >
-                                                {activeDocument.route}
-                                                <ExternalLink className="size-3.5" />
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <Badge variant="outline">
-                                            {isDraft
-                                                ? 'Черновик'
-                                                : activeVersion
-                                                    ? 'Опубликовано'
-                                                    : 'Нет редакции'}
-                                        </Badge>
-
-                                        {!isDraft && (
-                                            <Button
-                                                size="sm"
-                                                onClick={
-                                                    draftVersion
-                                                        ? () => openVersion(draftVersion)
-                                                        : createDraft
-                                                }
-                                            >
-                                                {draftVersion
-                                                    ? 'Открыть черновик'
-                                                    : 'Создать черновик'}
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <Separator />
-
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">
-                                            Текущая опубликованная версия
-                                        </p>
-
-                                        <p className="text-sm font-medium">
-                                            {currentVersion
-                                                ? `v${currentVersion.version}`
-                                                : 'Нет опубликованной версии'}
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">
-                                            Открытая редакция
-                                        </p>
-
-                                        <p className="text-sm font-medium">
-                                            {activeVersion
-                                                ? `v${activeVersion.version}`
-                                                : 'Черновик не создан'}
-                                        </p>
-                                    </div>
-                                </div>
+                                })}
                             </CardContent>
                         </Card>
 
-                        {/* Содержимое документа */}
-                        <Card>
-                            <CardHeader>
-                                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                                    <div>
-                                        <CardTitle className="text-base">
-                                            Содержимое документа
-                                        </CardTitle>
+                        {/* Рабочая область */}
+                        <div className="min-w-0 space-y-6">
+                            {/* Информация о документе */}
+                            <Card>
+                                <CardContent className="space-y-5 p-6">
+                                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+                                                <Icon className="size-5 text-muted-foreground" />
+                                            </div>
 
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            Изменения сохраняются в черновике до публикации.
-                                        </p>
-                                    </div>
+                                            <div className="min-w-0">
+                                                <h2 className="text-lg font-semibold">
+                                                    {activeDocument.title}
+                                                </h2>
 
-                                    {hasChanges && (
-                                        <Badge variant="secondary">
-                                            Есть несохранённые изменения
-                                        </Badge>
-                                    )}
-                                </div>
-                            </CardHeader>
-
-                            <CardContent className="space-y-4">
-                                {activeVersion ? (
-                                    <>
-                                        {/* Вкладки */}
-                                        <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => setEditorTab('edit')}
-                                                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${editorTab === 'edit'
-                                                    ? 'bg-background text-foreground shadow-sm'
-                                                    : 'text-muted-foreground hover:text-foreground'
-                                                    }`}
-                                            >
-                                                <Pencil className="size-4" />
-                                                Редактирование
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => setEditorTab('preview')}
-                                                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${editorTab === 'preview'
-                                                    ? 'bg-background text-foreground shadow-sm'
-                                                    : 'text-muted-foreground hover:text-foreground'
-                                                    }`}
-                                            >
-                                                <Eye className="size-4" />
-                                                Предпросмотр
-                                            </button>
+                                                <a
+                                                    href={activeDocument.route}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                                                >
+                                                    {activeDocument.route}
+                                                    <ExternalLink className="size-3.5" />
+                                                </a>
+                                            </div>
                                         </div>
 
-                                        {/* Редактирование */}
-                                        {editorTab === 'edit' && (
-                                            <div className="space-y-3">
-                                                <Textarea
-                                                    value={data.content}
-                                                    onChange={(event) =>
-                                                        setData(
-                                                            'content',
-                                                            event.target.value,
-                                                        )
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <Badge variant="outline">
+                                                {isDraft
+                                                    ? 'Черновик'
+                                                    : activeVersion
+                                                        ? 'Опубликовано'
+                                                        : 'Нет редакции'}
+                                            </Badge>
+
+                                            {!isDraft && (
+                                                <Button
+                                                    size="sm"
+                                                    onClick={
+                                                        draftVersion
+                                                            ? () => openVersion(draftVersion)
+                                                            : createDraft
                                                     }
-                                                    placeholder={`---
+                                                >
+                                                    {draftVersion
+                                                        ? 'Открыть черновик'
+                                                        : 'Создать черновик'}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <Separator />
+
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground">
+                                                Текущая опубликованная версия
+                                            </p>
+
+                                            <p className="text-sm font-medium">
+                                                {currentVersion
+                                                    ? `v${currentVersion.version}`
+                                                    : 'Нет опубликованной версии'}
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground">
+                                                Открытая редакция
+                                            </p>
+
+                                            <p className="text-sm font-medium">
+                                                {activeVersion
+                                                    ? `v${activeVersion.version}`
+                                                    : 'Черновик не создан'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Содержимое документа */}
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                                        <div>
+                                            <CardTitle className="text-base">
+                                                Содержимое документа
+                                            </CardTitle>
+
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                Изменения сохраняются в черновике до публикации.
+                                            </p>
+                                        </div>
+
+                                        {hasChanges && (
+                                            <Badge variant="secondary">
+                                                Есть несохранённые изменения
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </CardHeader>
+
+                                <CardContent className="space-y-4">
+                                    {activeVersion ? (
+                                        <>
+                                            {/* Вкладки */}
+                                            <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditorTab('edit')}
+                                                    className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${editorTab === 'edit'
+                                                        ? 'bg-background text-foreground shadow-sm'
+                                                        : 'text-muted-foreground hover:text-foreground'
+                                                        }`}
+                                                >
+                                                    <Pencil className="size-4" />
+                                                    Редактирование
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditorTab('preview')}
+                                                    className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${editorTab === 'preview'
+                                                        ? 'bg-background text-foreground shadow-sm'
+                                                        : 'text-muted-foreground hover:text-foreground'
+                                                        }`}
+                                                >
+                                                    <Eye className="size-4" />
+                                                    Предпросмотр
+                                                </button>
+                                            </div>
+
+                                            {/* Редактирование */}
+                                            {editorTab === 'edit' && (
+                                                <div className="space-y-3">
+                                                    <Textarea
+                                                        value={data.content}
+                                                        onChange={(event) =>
+                                                            setData(
+                                                                'content',
+                                                                event.target.value,
+                                                            )
+                                                        }
+                                                        placeholder={`---
 title: "Название документа"
 eyebrow: "ЮРИДИЧЕСКАЯ ИНФОРМАЦИЯ"
 description: "Описание документа"
@@ -573,220 +577,221 @@ robots: "index, follow"
 
 Текст термина...
 `}
-                                                    disabled={!isDraft || processing}
-                                                    className="min-h-[650px] resize-y font-mono text-sm leading-6"
-                                                />
-
-                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <p className="text-xs text-muted-foreground">
-                                                        ## — раздел, ### — подраздел.
-                                                        Описание раздела задаётся
-                                                        комментарием description.
-                                                    </p>
-
-                                                    <Badge variant="outline">
-                                                        Markdown
-                                                    </Badge>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Предпросмотр */}
-                                        {editorTab === 'preview' && (
-                                            <div className="overflow-hidden rounded-xl border bg-[#050505]">
-                                                <div className="max-h-[850px] overflow-y-auto">
-                                                    <LegalDocumentLayout
-                                                        title={activeDocument.title}
-                                                        route={activeDocument.route}
-                                                        content={data.content}
-                                                        version={activeVersion.version}
-                                                        publishedAt={activeVersion.published_at}
-                                                        preview={isDraft}
+                                                        disabled={!isDraft || processing}
+                                                        className="min-h-[650px] resize-y font-mono text-sm leading-6"
                                                     />
+
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <p className="text-xs text-muted-foreground">
+                                                            ## — раздел, ### — подраздел.
+                                                            Описание раздела задаётся
+                                                            комментарием description.
+                                                        </p>
+
+                                                        <Badge variant="outline">
+                                                            Markdown
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Предпросмотр */}
+                                            {editorTab === 'preview' && (
+                                                <div className="overflow-hidden rounded-xl border bg-[#050505]">
+                                                    <div className="max-h-[850px] overflow-y-auto">
+                                                        <LegalDocumentLayout
+                                                            title={activeDocument.title}
+                                                            route={activeDocument.route}
+                                                            content={data.content}
+                                                            version={activeVersion.version}
+                                                            publishedAt={activeVersion.published_at}
+                                                            preview={isDraft}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Действия */}
+                                            <div className="flex flex-col-reverse justify-between gap-3 border-t pt-4 sm:flex-row sm:items-center">
+                                                <p className="text-xs text-muted-foreground">
+                                                    {isDraft
+                                                        ? 'Сохранение не публикует документ.'
+                                                        : 'Опубликованная редакция доступна только для просмотра.'}
+                                                </p>
+
+                                                <div className="flex flex-wrap gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={saveDraft}
+                                                        disabled={
+                                                            processing ||
+                                                            !hasChanges ||
+                                                            !isDraft
+                                                        }
+                                                    >
+                                                        <Save className="mr-2 size-4" />
+                                                        Сохранить черновик
+                                                    </Button>
+
+                                                    <Button
+                                                        onClick={publishVersion}
+                                                        disabled={
+                                                            processing ||
+                                                            !isDraft ||
+                                                            hasChanges
+                                                        }
+                                                    >
+                                                        <Send className="mr-2 size-4" />
+                                                        Опубликовать
+                                                    </Button>
                                                 </div>
                                             </div>
-                                        )}
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-12 text-center">
+                                            <FileText className="mb-3 size-8 text-muted-foreground" />
 
-                                        {/* Действия */}
-                                        <div className="flex flex-col-reverse justify-between gap-3 border-t pt-4 sm:flex-row sm:items-center">
-                                            <p className="text-xs text-muted-foreground">
-                                                {isDraft
-                                                    ? 'Сохранение не публикует документ.'
-                                                    : 'Опубликованная редакция доступна только для просмотра.'}
+                                            <p className="font-medium">
+                                                Нет редакции для просмотра
                                             </p>
 
-                                            <div className="flex flex-wrap gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={saveDraft}
-                                                    disabled={
-                                                        processing ||
-                                                        !hasChanges ||
-                                                        !isDraft
-                                                    }
-                                                >
-                                                    <Save className="mr-2 size-4" />
-                                                    Сохранить черновик
-                                                </Button>
+                                            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                                                Создайте черновик, чтобы добавить содержимое документа.
+                                            </p>
 
-                                                <Button
-                                                    onClick={publishVersion}
-                                                    disabled={
-                                                        processing ||
-                                                        !isDraft ||
-                                                        hasChanges
-                                                    }
-                                                >
-                                                    <Send className="mr-2 size-4" />
-                                                    Опубликовать
-                                                </Button>
-                                            </div>
+                                            <Button
+                                                className="mt-4"
+                                                onClick={
+                                                    draftVersion
+                                                        ? () => openVersion(draftVersion)
+                                                        : createDraft
+                                                }
+                                            >
+                                                {draftVersion
+                                                    ? 'Открыть черновик'
+                                                    : 'Создать черновик'}
+                                            </Button>
                                         </div>
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-12 text-center">
-                                        <FileText className="mb-3 size-8 text-muted-foreground" />
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                                        <p className="font-medium">
-                                            Нет редакции для просмотра
-                                        </p>
+                            {/* История редакций */}
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center gap-2">
+                                        <History className="size-4 text-muted-foreground" />
 
-                                        <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                                            Создайте черновик, чтобы добавить содержимое документа.
-                                        </p>
-
-                                        <Button
-                                            className="mt-4"
-                                            onClick={
-                                                draftVersion
-                                                    ? () => openVersion(draftVersion)
-                                                    : createDraft
-                                            }
-                                        >
-                                            {draftVersion
-                                                ? 'Открыть черновик'
-                                                : 'Создать черновик'}
-                                        </Button>
+                                        <CardTitle className="text-base">
+                                            История редакций
+                                        </CardTitle>
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
 
-                        {/* История редакций */}
-                        <Card>
-                            <CardHeader>
-                                <div className="flex items-center gap-2">
-                                    <History className="size-4 text-muted-foreground" />
+                                    <p className="text-sm text-muted-foreground">
+                                        Нажмите на редакцию, чтобы открыть её содержимое.
+                                    </p>
+                                </CardHeader>
 
-                                    <CardTitle className="text-base">
-                                        История редакций
-                                    </CardTitle>
-                                </div>
+                                <CardContent>
+                                    {activeDocument.versions.length > 0 ? (
+                                        <div className="space-y-4">
+                                            {activeDocument.versions.map(
+                                                (version, index) => {
+                                                    const isActive =
+                                                        activeVersionId === version.id
 
-                                <p className="text-sm text-muted-foreground">
-                                    Нажмите на редакцию, чтобы открыть её содержимое.
-                                </p>
-                            </CardHeader>
-
-                            <CardContent>
-                                {activeDocument.versions.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {activeDocument.versions.map(
-                                            (version, index) => {
-                                                const isActive =
-                                                    activeVersionId === version.id
-
-                                                return (
-                                                    <button
-                                                        key={version.id}
-                                                        type="button"
-                                                        onClick={() =>
-                                                            openVersion(version)
-                                                        }
-                                                        className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${isActive
-                                                            ? 'border-[#AA141E] bg-[#AA141E]/5'
-                                                            : 'border-transparent hover:border-border hover:bg-muted/50'
-                                                            }`}
-                                                    >
-                                                        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border bg-muted/30">
-                                                            {version.status ===
-                                                                'published' ? (
-                                                                <CheckCircle2 className="size-4 text-muted-foreground" />
-                                                            ) : (
-                                                                <Circle className="size-4 text-muted-foreground" />
-                                                            )}
-                                                        </div>
-
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <p className="text-sm font-medium">
-                                                                    Версия{' '}
-                                                                    {version.version}
-                                                                </p>
-
-                                                                <Badge
-                                                                    variant={
-                                                                        version.status ===
-                                                                            'published'
-                                                                            ? 'secondary'
-                                                                            : 'outline'
-                                                                    }
-                                                                >
-                                                                    {version.status ===
-                                                                        'published'
-                                                                        ? 'Опубликована'
-                                                                        : 'Черновик'}
-                                                                </Badge>
-
-                                                                {isActive && (
-                                                                    <Badge variant="outline">
-                                                                        Открыта
-                                                                    </Badge>
+                                                    return (
+                                                        <button
+                                                            key={version.id}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                openVersion(version)
+                                                            }
+                                                            className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${isActive
+                                                                ? 'border-[#AA141E] bg-[#AA141E]/5'
+                                                                : 'border-transparent hover:border-border hover:bg-muted/50'
+                                                                }`}
+                                                        >
+                                                            <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border bg-muted/30">
+                                                                {version.status ===
+                                                                    'published' ? (
+                                                                    <CheckCircle2 className="size-4 text-muted-foreground" />
+                                                                ) : (
+                                                                    <Circle className="size-4 text-muted-foreground" />
                                                                 )}
                                                             </div>
 
-                                                            <p className="mt-1 text-xs text-muted-foreground">
-                                                                {version.published_at
-                                                                    ? `Опубликована ${new Date(
-                                                                        version.published_at,
-                                                                    ).toLocaleString(
-                                                                        'ru-RU',
-                                                                    )}`
-                                                                    : `Создана ${new Date(
-                                                                        version.created_at,
-                                                                    ).toLocaleString(
-                                                                        'ru-RU',
-                                                                    )}`}
-                                                            </p>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <p className="text-sm font-medium">
+                                                                        Версия{' '}
+                                                                        {version.version}
+                                                                    </p>
 
-                                                            {version.content_hash && (
-                                                                <p className="mt-2 break-all font-mono text-[11px] text-muted-foreground">
-                                                                    SHA-256:{' '}
-                                                                    {version.content_hash}
+                                                                    <Badge
+                                                                        variant={
+                                                                            version.status ===
+                                                                                'published'
+                                                                                ? 'secondary'
+                                                                                : 'outline'
+                                                                        }
+                                                                    >
+                                                                        {version.status ===
+                                                                            'published'
+                                                                            ? 'Опубликована'
+                                                                            : 'Черновик'}
+                                                                    </Badge>
+
+                                                                    {isActive && (
+                                                                        <Badge variant="outline">
+                                                                            Открыта
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+
+                                                                <p className="mt-1 text-xs text-muted-foreground">
+                                                                    {version.published_at
+                                                                        ? `Опубликована ${new Date(
+                                                                            version.published_at,
+                                                                        ).toLocaleString(
+                                                                            'ru-RU',
+                                                                        )}`
+                                                                        : `Создана ${new Date(
+                                                                            version.created_at,
+                                                                        ).toLocaleString(
+                                                                            'ru-RU',
+                                                                        )}`}
                                                                 </p>
-                                                            )}
-                                                        </div>
 
-                                                        {index === 0 && (
-                                                            <Badge variant="outline">
-                                                                Последняя
-                                                            </Badge>
-                                                        )}
-                                                    </button>
-                                                )
-                                            },
-                                        )}
-                                    </div>
-                                ) : (
-                                    <p className="py-6 text-center text-sm text-muted-foreground">
-                                        История редакций пока пуста.
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
+                                                                {version.content_hash && (
+                                                                    <p className="mt-2 break-all font-mono text-[11px] text-muted-foreground">
+                                                                        SHA-256:{' '}
+                                                                        {version.content_hash}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+
+                                                            {index === 0 && (
+                                                                <Badge variant="outline">
+                                                                    Последняя
+                                                                </Badge>
+                                                            )}
+                                                        </button>
+                                                    )
+                                                },
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="py-6 text-center text-sm text-muted-foreground">
+                                            История редакций пока пуста.
+                                        </p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </MainLayout>
         </>
     )
 }

@@ -29,7 +29,7 @@ import type {
     OrderPayment,
     PaymentStatus,
     StoreOrderPaymentFormData,
-} from '@/types/index.d'
+} from '@/types'
 
 interface OrderPaymentDialogProps {
     orderId: number

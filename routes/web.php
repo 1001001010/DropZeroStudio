@@ -3,8 +3,9 @@
 use App\Http\Controllers\Admins\AdminController;
 use App\Http\Controllers\DropController;
 use App\Http\Controllers\LegalController;
-use App\Http\Controllers\Admin\CdekLocationController;
+use App\Http\Controllers\Admin\Cdek\{CdekLocationController, CdekCalculatorController};
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Admin\Cdek\CdekOfficeImageController;
 use App\Http\Controllers\SkinController;
 use App\Http\Controllers\Admin\{OrderController, OrderPaymentController};
 use App\Http\Controllers\ToyController;
@@ -134,6 +135,12 @@ Route::middleware(['auth', 'admin'])
                 ])->name('pickup-points');
             });
 
+        Route::get(
+            '/cdek/office-images/{uuid}',
+            [CdekOfficeImageController::class, 'show']
+        )
+            ->whereUuid('uuid')
+            ->name('cdek.office-image');
         /*
         |--------------------------------------------------------------------------
         | Управление скинами
@@ -177,6 +184,12 @@ Route::middleware(['auth', 'admin'])
                 Route::delete('/{drop}', 'destroy')->name('destroy');
             });
 
+        // Расчёт стоимости доставки СДЭК.
+        Route::post('/cdek/calculate', [
+            CdekCalculatorController::class,
+            'calculate',
+        ])->name('cdek.calculate');
+
         /*
         |--------------------------------------------------------------------------
         | Управление фигурками (Toys)
@@ -207,6 +220,3 @@ Route::middleware(['auth', 'admin'])
 // Настройки профиля и авторизация.
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
-
-
-// Теперь нужно создать OrderStatusService, но перед ним я предлагаю добавить Form Requests, чтобы сервис получал строго проверенные данные. Иначе даже хорошая бизнес-логика не защитит нас от некорректного запроса.

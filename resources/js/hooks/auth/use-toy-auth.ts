@@ -1,7 +1,7 @@
 
 import { useState } from 'react'
 
-import type { AuthMode, ToyCode } from '@/types/index.d'
+import type { AuthMode, ToyCode } from '@/types'
 
 /**
  * Проверяет, что значение является обычным объектом.

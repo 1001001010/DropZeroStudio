@@ -1,6 +1,7 @@
 
 import { ToyNav } from '@/components/toy-nav'
 import { CharacterCarousel } from '@/components/character-carousel'
+import MainLayout from '@/layouts/MainLayout'
 
 interface Skin {
     name: string
@@ -33,15 +34,18 @@ interface Props {
 
 export default function ToyPage({ toys, activeToyCode }: Props) {
     return (
-        <main className="min-h-dvh bg-[#050505] text-white">
-            <ToyNav />
+        <MainLayout>
 
-            <div className="mx-auto w-full max-w-[1480px] px-4 py-8 md:px-8 md:py-12">
-                <CharacterCarousel
-                    toys={toys}
-                    activeToyCode={activeToyCode}
-                />
-            </div>
-        </main>
+            <main className="min-h-dvh bg-[#050505] text-white">
+                <ToyNav />
+
+                <div className="mx-auto w-full max-w-[1480px] px-4 py-8 md:px-8 md:py-12">
+                    <CharacterCarousel
+                        toys={toys}
+                        activeToyCode={activeToyCode}
+                    />
+                </div>
+            </main>
+        </MainLayout>
     )
 }

@@ -138,7 +138,10 @@ export function DeliveryTariffs({
     const hasTariffs = tariffs.length > 0
 
     return (
-        <section className="space-y-3">
+        <section
+            className="space-y-3"
+            aria-busy={loading}
+        >
             {/* Заголовок и кнопка расчёта */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">

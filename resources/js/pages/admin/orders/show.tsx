@@ -12,7 +12,8 @@ import { OrderHistory } from '@/components/admin/orders/order-history'
 
 import { Button } from '@/components/ui/button'
 
-import type { Order } from '@/types/index.d'
+import type { Order } from '@/types'
+import MainLayout from '@/layouts/MainLayout'
 
 interface OrderShowPageProps {
     order: Order
@@ -27,85 +28,88 @@ export default function OrderShowPage({ order }: OrderShowPageProps) {
 
     return (
         <>
-            <Head title={`Заказ ${order.number}`} />
+            <MainLayout>
+                <Head title={`Заказ ${order.number}`} />
 
-            <div className="min-h-screen bg-background">
-                <AdminNav />
 
-                <main className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-                    {/* Навигация и заголовок страницы */}
-                    <div className="space-y-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="-ml-2 gap-2 text-muted-foreground"
-                            asChild
-                        >
-                            <Link href="/admin/orders">
-                                <ArrowLeft className="size-4" />
-                                Назад к заказам
-                            </Link>
-                        </Button>
+                <div className="min-h-screen bg-background">
+                    <AdminNav />
 
-                        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                            <div className="space-y-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <ListOrderedIcon className="size-5 text-muted-foreground" />
+                    <main className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+                        {/* Навигация и заголовок страницы */}
+                        <div className="space-y-4">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="-ml-2 gap-2 text-muted-foreground"
+                                asChild
+                            >
+                                <Link href="/admin/orders">
+                                    <ArrowLeft className="size-4" />
+                                    Назад к заказам
+                                </Link>
+                            </Button>
 
-                                    <h1 className="text-2xl font-semibold tracking-tight">
-                                        {order.number}
-                                    </h1>
+                            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                                <div className="space-y-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <ListOrderedIcon className="size-5 text-muted-foreground" />
+
+                                        <h1 className="text-2xl font-semibold tracking-tight">
+                                            {order.number}
+                                        </h1>
+                                    </div>
+
+                                    <p className="text-sm text-muted-foreground">
+                                        Подробная информация о заказе и его обработке.
+                                    </p>
                                 </div>
 
-                                <p className="text-sm text-muted-foreground">
-                                    Подробная информация о заказе и его обработке.
-                                </p>
-                            </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">
+                                        Внутренний ID:
+                                    </span>
 
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">
-                                    Внутренний ID:
-                                </span>
-
-                                <span className="rounded-md border bg-muted/30 px-2 py-1 font-mono text-xs">
-                                    #{order.id}
-                                </span>
+                                    <span className="rounded-md border bg-muted/30 px-2 py-1 font-mono text-xs">
+                                        #{order.id}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Основное содержимое страницы */}
-                    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-                        {/* Основная колонка */}
-                        <div className="min-w-0 space-y-6">
-                            <OrderGeneralInfo order={order} />
+                        {/* Основное содержимое страницы */}
+                        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+                            {/* Основная колонка */}
+                            <div className="min-w-0 space-y-6">
+                                <OrderGeneralInfo order={order} />
 
-                            <OrderItems
-                                items={order.items}
-                                currency={order.currency}
-                            />
+                                <OrderItems
+                                    items={order.items}
+                                    currency={order.currency}
+                                />
 
-                            <OrderDelivery order={order} />
-                            <OrderHistory events={order.history} />
+                                <OrderDelivery order={order} />
+                                <OrderHistory events={order.history} />
+                            </div>
+
+                            {/* Боковая колонка */}
+                            <aside className="min-w-0 space-y-6">
+                                <OrderCustomer
+                                    order={order}
+                                    address={order.shipment?.address ?? null}
+                                />
+
+                                <OrderPayment
+                                    orderId={order.id}
+                                    payment={order.payment}
+                                    total={Number(order.total)}
+                                    currency={order.currency}
+                                />
+                            </aside>
                         </div>
-
-                        {/* Боковая колонка */}
-                        <aside className="min-w-0 space-y-6">
-                            <OrderCustomer
-                                order={order}
-                                address={order.shipment?.address ?? null}
-                            />
-
-                            <OrderPayment
-                                orderId={order.id}
-                                payment={order.payment}
-                                total={Number(order.total)}
-                                currency={order.currency}
-                            />
-                        </aside>
-                    </div>
-                </main>
-            </div>
+                    </main>
+                </div>
+            </MainLayout>
         </>
     )
 }

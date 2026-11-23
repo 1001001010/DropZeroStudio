@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 
 import {
@@ -13,9 +14,10 @@ import {
     Truck,
     UserRound,
     XCircle,
+    type LucideIcon,
 } from 'lucide-react'
 
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,11 +28,8 @@ import {
 } from '@/components/ui/collapsible'
 import { Separator } from '@/components/ui/separator'
 
-import type { ShipmentStatus } from '@/types/index.d'
-
-import type {
-    DeliveryShipmentInfoProps,
-} from '@/types/index'
+import type { ShipmentStatus } from '@/types'
+import type { DeliveryShipmentInfoProps } from '@/types/index'
 
 /**
  * Конфигурация отображения статусов отправления.
@@ -40,7 +39,7 @@ const SHIPMENT_STATUS_CONFIG: Record<
     {
         label: string
         variant: 'default' | 'secondary' | 'destructive' | 'outline'
-        icon: typeof Truck
+        icon: LucideIcon
     }
 > = {
     not_shipped: {
@@ -72,6 +71,9 @@ const SHIPMENT_STATUS_CONFIG: Record<
 
 /**
  * Форматирует дату для отображения.
+ *
+ * @param value Дата в строковом формате.
+ * @returns Отформатированная дата или сообщение об отсутствии данных.
  */
 function formatDate(value: string | null): string {
     if (!value) {
@@ -91,7 +93,10 @@ function formatDate(value: string | null): string {
 }
 
 /**
- * Копирует значение в буфер обмена.
+ * Копирует значение в буфер обмена и отображает результат.
+ *
+ * @param value Значение для копирования.
+ * @param label Название копируемого значения.
  */
 async function copyToClipboard(
     value: string,
@@ -100,14 +105,20 @@ async function copyToClipboard(
     try {
         await navigator.clipboard.writeText(value)
 
-        toast.success(`${label} скопирован`)
+        toast.add({
+            title: `${label} скопирован`,
+            description: 'Данные успешно скопированы в буфер обмена.',
+        })
     } catch {
-        toast.error('Не удалось скопировать данные')
+        toast.add({
+            title: 'Не удалось скопировать данные',
+            description: 'Проверьте разрешения браузера на доступ к буферу обмена.',
+        })
     }
 }
 
 /**
- * Отдельное информационное поле.
+ * Отдельное информационное поле отправления.
  */
 function InfoField({
     label,
@@ -117,7 +128,7 @@ function InfoField({
 }: {
     label: string
     value: string | null
-    icon?: typeof Package
+    icon?: LucideIcon
     copyable?: boolean
 }) {
     return (
@@ -153,7 +164,9 @@ function InfoField({
 }
 
 /**
- * Информация о созданном отправлении СДЭК.
+ * Отображает информацию о созданном отправлении СДЭК.
+ *
+ * @param shipment Данные отправления.
  */
 export function DeliveryShipmentInfo({
     shipment,
@@ -202,7 +215,6 @@ export function DeliveryShipmentInfo({
                     className="gap-1.5"
                 >
                     <StatusIcon className="size-3.5" />
-
                     {status.label}
                 </Badge>
             </div>
@@ -241,20 +253,18 @@ export function DeliveryShipmentInfo({
 
                             {trackingUrl && (
                                 <Button
-                                    type="button"
+                                    asChild
                                     size="sm"
                                     variant="outline"
-                                    onClick={() =>
-                                        window.open(
-                                            trackingUrl,
-                                            '_blank',
-                                            'noopener,noreferrer',
-                                        )
-                                    }
                                 >
-                                    <ExternalLink className="size-3.5" />
-
-                                    Отследить
+                                    <a
+                                        href={trackingUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <ExternalLink className="size-3.5" />
+                                        Отследить
+                                    </a>
                                 </Button>
                             )}
                         </div>
@@ -356,17 +366,11 @@ export function DeliveryShipmentInfo({
 
                 <CollapsibleContent className="pt-3">
                     {formattedShippingData ? (
-                        <pre className="
-                            max-h-80 overflow-auto rounded-lg border
-                            bg-background p-3 text-xs leading-relaxed
-                        ">
+                        <pre className="max-h-80 overflow-auto rounded-lg border bg-background p-3 text-xs leading-relaxed">
                             {formattedShippingData}
                         </pre>
                     ) : (
-                        <div className="
-                            rounded-lg border border-dashed p-4
-                            text-center text-sm text-muted-foreground
-                        ">
+                        <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
                             Технические данные отсутствуют.
                         </div>
                     )}

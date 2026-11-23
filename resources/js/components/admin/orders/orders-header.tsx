@@ -1,6 +1,6 @@
 import { StoreOrderDialog } from '@/components/admin/orders/store-order-dialog/store-order-dialog'
 
-import type { OrderDropOption } from '@/types/index.d'
+import type { OrderDropOption } from '@/types'
 
 import {
     Breadcrumb,

@@ -104,6 +104,7 @@ class CdekLocationService
      *
      * @return array
      */
+
     public function searchPickupPoints(
         int $cityCode,
         ?string $type = 'ALL',
@@ -116,6 +117,8 @@ class CdekLocationService
 
         $params = [
             'city_code' => $cityCode,
+            'size' => 1000,
+            'page' => 0,
         ];
 
         if ($type !== null && strtoupper($type) !== 'ALL') {
@@ -127,11 +130,14 @@ class CdekLocationService
             $params,
         );
 
+        $response = $this->client->get('deliverypoints', $params);
+
         return collect($response)
             ->map(fn(array $point) => $this->formatPickupPoint($point))
             ->values()
             ->all();
     }
+
 
     /**
      * Приведение ответа API города к единому формату.
@@ -173,22 +179,81 @@ class CdekLocationService
         $location = $point['location'] ?? [];
 
         return [
+            // Основная информация
             'code' => $point['code'] ?? null,
+            'uuid' => $point['uuid'] ?? null,
             'name' => $point['name'] ?? null,
             'type' => $point['type'] ?? null,
+            'status' => $point['status'] ?? null,
+            'owner_code' => $point['owner_code'] ?? null,
+
+            // Адрес
             'address' => $location['address'] ?? null,
+            'address_full' => $location['address_full'] ?? null,
+            'address_comment' => $point['address_comment'] ?? null,
             'city' => $location['city'] ?? null,
             'region' => $location['region'] ?? null,
-            'country' => $location['country'] ?? null,
+            'country' => $location['country_code'] ?? null,
             'postal_code' => $location['postal_code'] ?? null,
+
+            // Координаты
             'latitude' => $location['latitude'] ?? null,
             'longitude' => $location['longitude'] ?? null,
+
+            // Расположение
+            'nearest_station' => $point['nearest_station'] ?? null,
+            'nearest_metro_station' => $point['nearest_metro_station'] ?? null,
+
+            // Контакты и график
             'work_time' => $point['work_time'] ?? null,
+            'work_time_list' => $point['work_time_list'] ?? [],
+            'work_time_exception_list' => $point['work_time_exception_list'] ?? [],
             'phones' => $point['phones'] ?? [],
-            'note' => $point['note'] ?? null,
             'email' => $point['email'] ?? null,
-            'office_image' => $point['office_image'] ?? null,
-            'address_comment' => $point['address_comment'] ?? null,
+            'site' => $point['site'] ?? null,
+
+            // Дополнительная информация
+            'note' => $point['note'] ?? null,
+            'office_images' => array_values(array_filter(
+                array_map(
+                    function (array $image): ?string {
+                        $url = $image['url'] ?? null;
+
+                        if (!is_string($url)) {
+                            return null;
+                        }
+
+                        $path = parse_url($url, PHP_URL_PATH);
+
+                        $uuid = basename(
+                            is_string($path) ? $path : ''
+                        );
+
+                        if (!preg_match('/\A[a-f0-9-]{36}\z/i', $uuid)) {
+                            return null;
+                        }
+
+                        return route('admin.cdek.office-image', [
+                            'uuid' => $uuid,
+                        ]);
+                    },
+                    $point['office_image_list'] ?? [],
+                ),
+            )),
+
+            // Возможности пункта выдачи
+            'take_only' => $point['take_only'] ?? false,
+            'is_handout' => $point['is_handout'] ?? false,
+            'is_reception' => $point['is_reception'] ?? false,
+            'is_dressing_room' => $point['is_dressing_room'] ?? false,
+            'have_cashless' => $point['have_cashless'] ?? false,
+            'have_cash' => $point['have_cash'] ?? false,
+            'have_fast_payment_system' => $point['have_fast_payment_system'] ?? false,
+            'allowed_cod' => $point['allowed_cod'] ?? false,
+
+            // Ограничения по весу
+            'weight_min' => $point['weight_min'] ?? null,
+            'weight_max' => $point['weight_max'] ?? null,
         ];
     }
 }

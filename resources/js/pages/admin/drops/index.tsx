@@ -13,6 +13,7 @@ import type {
     Skin,
     PageProps
 } from "@/types/index"
+import MainLayout from '@/layouts/MainLayout'
 
 
 export default function DropPage({
@@ -26,26 +27,28 @@ export default function DropPage({
 }>) {
     return (
         <>
-            <Head title="Дропы" />
-            <main className="min-h-screen bg-background">
-                <AdminNav />
+            <MainLayout>
+                <Head title="Дропы" />
+                <main className="min-h-screen bg-background">
+                    <AdminNav />
 
-                <div className="space-y-8 p-6 lg:p-8">
-                    <DropHeader skins={skins} />
+                    <div className="space-y-8 p-6 lg:p-8">
+                        <DropHeader skins={skins} />
 
-                    <DropStats
-                        total={stats.total}
-                        active={stats.active}
-                        totalQuantity={stats.totalQuantity}
-                        potentialRevenue={stats.potentialRevenue}
-                    />
+                        <DropStats
+                            total={stats.total}
+                            active={stats.active}
+                            totalQuantity={stats.totalQuantity}
+                            potentialRevenue={stats.potentialRevenue}
+                        />
 
-                    <DropTable
-                        drops={drops}
-                        skins={skins}
-                    />
-                </div>
-            </main>
+                        <DropTable
+                            drops={drops}
+                            skins={skins}
+                        />
+                    </div>
+                </main>
+            </MainLayout>
         </>
     )
 }

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { LoaderCircle, MapPin, Search } from 'lucide-react'
-import type { CdekCity } from '@/types/index.d'
+import type { CdekCity } from '@/types'
 
 interface DeliveryCityFieldProps {
     value: string

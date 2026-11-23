@@ -17,7 +17,7 @@ import {
     CardTitle,
 } from '@/components/ui/card'
 
-import type { Order, OrderStatus } from '@/types/index.d'
+import type { Order, OrderStatus } from '@/types'
 
 interface OrderGeneralInfoProps {
     /** Полная информация о заказе. */

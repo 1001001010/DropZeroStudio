@@ -5,7 +5,7 @@ import type {
     LegalDocumentData,
     LegalMetadata,
     LegalSection,
-} from '@/types/index.d'
+} from '@/types'
 
 /**
  * Проверяет, что YAML-значение является объектом с метаданными.

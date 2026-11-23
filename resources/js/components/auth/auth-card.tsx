@@ -1,5 +1,5 @@
 
-import type { AuthCardProps } from '@/types/index.d'
+import type { AuthCardProps } from '@/types'
 
 export function AuthCard({
     title,

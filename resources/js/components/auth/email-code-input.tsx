@@ -1,5 +1,5 @@
 
-import type { EmailCodeInputProps } from '@/types/index.d'
+import type { EmailCodeInputProps } from '@/types'
 
 const INPUT_CLASS_NAME = `
     h-12 w-10

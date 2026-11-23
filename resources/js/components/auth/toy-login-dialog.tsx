@@ -17,7 +17,7 @@ import {
 import { EmailCodeInput } from '@/components/auth/email-code-input'
 import { useEmailCode } from '@/hooks/auth/use-email-code'
 
-import type { ToyLoginDialogProps } from '@/types/index.d'
+import type { ToyLoginDialogProps } from '@/types'
 
 /**
  * Получает CSRF-токен Laravel из meta-тега страницы.

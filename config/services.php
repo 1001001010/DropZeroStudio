@@ -40,5 +40,9 @@ return [
         'client_id' => env('CDEK_CLIENT_ID'),
         'client_secret' => env('CDEK_CLIENT_SECRET'),
         'api_url' => env('CDEK_API_URL', 'https://api.edu.cdek.ru/v2'),
+        'file_url' => env(
+            'CDEK_FILE_URL',
+            'https://gateway.edu.cdek.ru'
+        ),
     ],
 ];

@@ -1,7 +1,9 @@
-
 import { useState } from 'react'
-import { toast } from 'sonner'
+import axios from 'axios'
+
 import { Package, Truck } from 'lucide-react'
+
+import { toast } from '@/components/ui/toast'
 
 import {
     Card,
@@ -9,15 +11,11 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
+
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 
-import type { Order } from '@/types/index.d'
-
-import { DeliveryLocationForm } from './delivery-location-form'
-import { DeliveryPackageForm } from './delivery-package-form'
-import { DeliveryTariffs } from './delivery-tariffs'
-import { DeliveryShipmentInfo } from './delivery-shipment-info'
+import type { Order } from '@/types'
 
 import type {
     DeliveryTariff,
@@ -26,15 +24,31 @@ import type {
     SenderForm,
 } from '@/types/index'
 
+import { DeliveryLocationForm } from './delivery-location-form'
+import { DeliveryPackageForm } from './delivery-package-form'
+import { DeliveryTariffs } from './delivery-tariffs'
+import { DeliveryShipmentInfo } from './delivery-shipment-info'
+
 interface OrderDeliveryProps {
     order: Order
 }
 
 /**
+ * Формат ответа CdekCalculatorService.
+ */
+interface CdekTariffResponse {
+    tariff_code: number
+    tariff_name: string
+    delivery_sum: number
+    period_min: number | null
+    period_max: number | null
+}
+
+/**
  * Основной блок управления доставкой заказа.
  *
- * Объединяет формы отправителя, получателя, посылки,
- * расчёт тарифов и информацию о созданном отправлении.
+ * Объединяет формы отправителя, получателя и посылки,
+ * расчёт тарифов СДЭК и информацию о созданном отправлении.
  */
 export function OrderDelivery({ order }: OrderDeliveryProps) {
     // Данные отправителя.
@@ -73,6 +87,17 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
     const [tariffs, setTariffs] = useState<DeliveryTariff[]>([])
     const [selectedTariff, setSelectedTariff] = useState<number | null>(null)
 
+    // Состояние загрузки расчёта тарифов.
+    const [isCalculating, setIsCalculating] = useState(false)
+
+    /**
+     * Сбрасывает предыдущие результаты расчёта.
+     */
+    const resetTariffs = () => {
+        setTariffs([])
+        setSelectedTariff(null)
+    }
+
     /**
      * Обновляет данные отправителя.
      */
@@ -84,6 +109,8 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
             ...previous,
             [key]: value,
         }) as SenderForm)
+
+        resetTariffs()
     }
 
     /**
@@ -97,6 +124,8 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
             ...previous,
             [key]: value,
         }) as RecipientForm)
+
+        resetTariffs()
     }
 
     /**
@@ -110,6 +139,8 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
             ...previous,
             [key]: value,
         }) as PackageForm)
+
+        resetTariffs()
     }
 
     /**
@@ -117,12 +148,18 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
      */
     const validateDeliveryData = (): boolean => {
         if (!sender.name.trim() || !sender.phone.trim()) {
-            toast.error('Заполните имя и телефон отправителя')
+            toast.add({
+                title: 'Заполните имя и телефон отправителя',
+            })
+
             return false
         }
 
         if (!sender.city.trim() || !sender.cityCode) {
-            toast.error('Укажите город отправителя')
+            toast.add({
+                title: 'Укажите город отправителя',
+            })
+
             return false
         }
 
@@ -130,7 +167,10 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
             sender.deliveryType === 'pvz' &&
             !sender.pickupPoint.trim()
         ) {
-            toast.error('Выберите пункт отправления СДЭК')
+            toast.add({
+                title: 'Выберите пункт отправления СДЭК',
+            })
+
             return false
         }
 
@@ -138,17 +178,26 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
             sender.deliveryType === 'address' &&
             !sender.address.trim()
         ) {
-            toast.error('Укажите адрес отправителя')
+            toast.add({
+                title: 'Укажите адрес отправителя',
+            })
+
             return false
         }
 
         if (!recipient.name.trim() || !recipient.phone.trim()) {
-            toast.error('Заполните имя и телефон получателя')
+            toast.add({
+                title: 'Заполните имя и телефон получателя',
+            })
+
             return false
         }
 
         if (!recipient.city.trim() || !recipient.cityCode) {
-            toast.error('Укажите город получателя')
+            toast.add({
+                title: 'Укажите город получателя',
+            })
+
             return false
         }
 
@@ -156,7 +205,10 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
             recipient.deliveryType === 'pvz' &&
             !recipient.pickupPoint.trim()
         ) {
-            toast.error('Выберите пункт выдачи получателя')
+            toast.add({
+                title: 'Выберите пункт выдачи получателя',
+            })
+
             return false
         }
 
@@ -164,7 +216,10 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
             recipient.deliveryType === 'address' &&
             !recipient.address.trim()
         ) {
-            toast.error('Укажите адрес получателя')
+            toast.add({
+                title: 'Укажите адрес получателя',
+            })
+
             return false
         }
 
@@ -175,8 +230,15 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
             packageData.height,
         ]
 
-        if (dimensions.some((value) => value === '' || value <= 0)) {
-            toast.error('Укажите корректные параметры посылки')
+        if (
+            dimensions.some(
+                (value) => value === '' || Number(value) <= 0,
+            )
+        ) {
+            toast.add({
+                title: 'Укажите корректные параметры посылки',
+            })
+
             return false
         }
 
@@ -184,33 +246,154 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
     }
 
     /**
-     * Запускает расчёт стоимости доставки.
-     *
-     * Здесь будет вызов Laravel endpoint с данными форм.
+     * Формирует объект местоположения для API СДЭК.
      */
-    const handleCalculate = () => {
-        if (!validateDeliveryData()) {
+    const getLocationPayload = (
+        cityCode: number,
+        deliveryType: 'pvz' | 'address',
+        address: string,
+    ) => ({
+        code: cityCode,
+        ...(deliveryType === 'address' ? { address } : {}),
+    })
+
+    /**
+     * Приводит ответ CdekCalculatorService к формату frontend.
+     */
+    const normalizeTariffs = (
+        items: CdekTariffResponse[],
+    ): DeliveryTariff[] => {
+        return items.map((item) => ({
+            code: Number(item.tariff_code),
+            name: item.tariff_name,
+            price: Number(item.delivery_sum),
+            currency: 'RUB',
+            deliveryMin: item.period_min,
+            deliveryMax: item.period_max,
+        }))
+    }
+
+    /**
+     * Запускает расчёт стоимости доставки через Laravel API.
+     */
+    const handleCalculate = async () => {
+
+        if (isCalculating || !validateDeliveryData()) {
             return
         }
 
-        setSelectedTariff(null)
-        setTariffs([])
+        setIsCalculating(true)
+        resetTariffs()
 
-        toast.info('Следующий этап — подключение расчёта тарифов СДЭК')
+        try {
+            const payload = {
+                from_location: getLocationPayload(
+                    sender.cityCode!,
+                    sender.deliveryType,
+                    sender.address,
+                ),
+
+                to_location: getLocationPayload(
+                    recipient.cityCode!,
+                    recipient.deliveryType,
+                    recipient.address,
+                ),
+
+                packages: [
+                    {
+                        weight: Number(packageData.weight),
+                        length: Number(packageData.length),
+                        width: Number(packageData.width),
+                        height: Number(packageData.height),
+                    },
+                ],
+
+                ...(sender.deliveryType === 'pvz'
+                    ? { shipment_point: sender.pickupPoint }
+                    : {}),
+
+                ...(recipient.deliveryType === 'pvz'
+                    ? { delivery_point: recipient.pickupPoint }
+                    : {}),
+            }
+
+            const response = await axios.post<{
+                data: CdekTariffResponse[]
+            }>(
+                route('admin.cdek.calculate'),
+                payload,
+            )
+
+            const calculatedTariffs = normalizeTariffs(
+                response.data.data ?? [],
+            )
+
+            if (calculatedTariffs.length === 0) {
+                toast.add({
+                    title: 'Для указанного направления тарифы не найдены',
+                })
+
+                return
+            }
+
+            setTariffs(calculatedTariffs)
+
+            toast.add({
+                title: 'Тарифы доставки рассчитаны',
+                description: `Найдено тарифов: ${calculatedTariffs.length}`,
+            })
+        } catch (error: unknown) {
+            console.error('CDEK calculation failed:', error)
+
+            if (axios.isAxiosError(error)) {
+                console.error('HTTP status:', error.response?.status)
+                console.error('Response data:', error.response?.data)
+
+                const responseData = error.response?.data
+
+                const message =
+                    responseData?.message ??
+                    responseData?.error ??
+                    error.message ??
+                    'Не удалось рассчитать стоимость доставки'
+
+                toast.add({
+                    title: 'Ошибка расчёта доставки',
+                    description: String(message),
+                })
+            } else if (error instanceof Error) {
+                toast.add({
+                    title: 'Ошибка расчёта доставки',
+                    description: error.message,
+                })
+            } else {
+                toast.add({
+                    title: 'Неизвестная ошибка расчёта доставки',
+                    description: String(error),
+                })
+            }
+        } finally {
+            setIsCalculating(false)
+        }
     }
 
     /**
      * Обрабатывает создание отправления.
      *
-     * Реальный запрос будет добавлен после подключения backend.
+     * Подключим после завершения интеграции расчёта тарифов.
      */
     const handleCreateShipment = () => {
         if (selectedTariff === null) {
-            toast.error('Сначала выберите тариф доставки')
+            toast.add({
+                title: 'Сначала выберите тариф доставки',
+            })
+
             return
         }
 
-        toast.info('Создание отправления подключим через Laravel API')
+        toast.add({
+            title: 'Создание отправления подключим следующим этапом',
+        })
     }
 
     // Если отправление уже существует, показываем его данные.
@@ -288,7 +471,7 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
                     <DeliveryTariffs
                         tariffs={tariffs}
                         selectedTariff={selectedTariff}
-                        loading={false}
+                        loading={isCalculating}
                         onCalculate={handleCalculate}
                         onSelect={setSelectedTariff}
                     />

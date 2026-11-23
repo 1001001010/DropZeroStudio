@@ -1,6 +1,6 @@
 
 import { Reveal } from '@/components/reveal'
-import type { SpecsProps } from '@/types/index.d'
+import type { SpecsProps } from '@/types'
 
 const specifications = [
     { label: 'Материал', value: 'Премиальный плюш' },

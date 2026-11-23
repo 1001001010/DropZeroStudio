@@ -2,7 +2,7 @@
 import type {
     ToyCode,
     ToyCodeInput,
-} from '@/types/index.d'
+} from '@/types'
 
 /**
  * Проверяет, что символ является латинской буквой.

@@ -14,7 +14,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 
-import type { OrderStatus } from '@/types/index.d'
+import type { OrderStatus } from '@/types'
 
 /**
  * Свойства фильтров заказов.

@@ -9,7 +9,7 @@ import {
     UserRound,
 } from 'lucide-react'
 
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +19,7 @@ import {
     CardTitle,
 } from '@/components/ui/card'
 
-import type { Order } from '@/types/index.d'
+import type { Order } from '@/types'
 
 interface OrderCustomerProps {
     /** Контактные данные покупателя. */
@@ -30,11 +30,10 @@ interface OrderCustomerProps {
 }
 
 /**
- * Копирует текст в буфер обмена и уведомляет пользователя о результате.
+ * Копирует текст в буфер обмена и отображает результат операции.
  *
  * @param value Текст для копирования.
  * @param label Название копируемого значения.
- * @returns Promise, завершающийся после выполнения операции.
  */
 async function copyToClipboard(
     value: string,
@@ -42,9 +41,16 @@ async function copyToClipboard(
 ): Promise<void> {
     try {
         await navigator.clipboard.writeText(value)
-        toast.success(`${label} скопирован`)
+
+        toast.add({
+            title: `${label} скопирован`,
+            description: 'Данные успешно скопированы в буфер обмена.',
+        })
     } catch {
-        toast.error('Не удалось скопировать данные')
+        toast.add({
+            title: 'Не удалось скопировать данные',
+            description: 'Проверьте разрешения браузера на доступ к буферу обмена.',
+        })
     }
 }
 
@@ -53,15 +59,15 @@ async function copyToClipboard(
  *
  * @param order Данные заказа.
  * @param address Адрес доставки.
- * @returns Карточка с информацией о клиенте.
  */
 export function OrderCustomer({
     order,
     address,
 }: OrderCustomerProps) {
+    const telegramUsername = order.telegram_username?.replace(/^@/, '')
 
-    const telegramUrl = order.telegram_username
-        ? `https://t.me/${order.telegram_username.replace(/^@/, '')}`
+    const telegramUrl = telegramUsername
+        ? `https://t.me/${telegramUsername}`
         : null
 
     return (
@@ -86,7 +92,7 @@ export function OrderCustomer({
                         </p>
 
                         <p className="text-xs text-muted-foreground">
-                            ID покупателя: #{order?.customer?.id || "Не зарегистрирован"}
+                            ID покупателя: #{order.customer?.id ?? 'Не зарегистрирован'}
                         </p>
                     </div>
                 </div>
@@ -103,9 +109,7 @@ export function OrderCustomer({
                                 </p>
 
                                 <p className="truncate text-sm font-medium">
-                                    {order.telegram_username
-                                        ? `${order.telegram_username}`
-                                        : 'Не указан'}
+                                    {order.telegram_username || 'Не указан'}
                                 </p>
                             </div>
                         </div>
@@ -217,10 +221,12 @@ export function OrderCustomer({
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => copyToClipboard(
-                                `@${order.telegram_username}`,
-                                'Telegram',
-                            )}
+                            onClick={() =>
+                                copyToClipboard(
+                                    `@${telegramUsername}`,
+                                    'Telegram',
+                                )
+                            }
                         >
                             <Copy className="size-3.5" />
                             Telegram
@@ -231,10 +237,9 @@ export function OrderCustomer({
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => copyToClipboard(
-                                order.email!,
-                                'Email',
-                            )}
+                            onClick={() =>
+                                copyToClipboard(order.email!, 'Email')
+                            }
                         >
                             <Copy className="size-3.5" />
                             Email
@@ -245,10 +250,9 @@ export function OrderCustomer({
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => copyToClipboard(
-                                order.phone!,
-                                'Телефон',
-                            )}
+                            onClick={() =>
+                                copyToClipboard(order.phone!, 'Телефон')
+                            }
                         >
                             <Copy className="size-3.5" />
                             Телефон

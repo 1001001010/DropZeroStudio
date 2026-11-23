@@ -12,7 +12,7 @@ import type {
     ToyCodeDigits,
     ToyCodeInput,
     ToyCodePrefix,
-} from '@/types/index.d'
+} from '@/types'
 
 const INPUT_COUNT = 5
 

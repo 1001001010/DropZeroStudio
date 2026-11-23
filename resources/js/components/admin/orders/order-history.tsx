@@ -8,7 +8,7 @@ import {
     UserRound,
 } from 'lucide-react'
 
-import type { OrderHistoryEvent, OrderStatus } from '@/types/index.d'
+import type { OrderHistoryEvent, OrderStatus } from '@/types'
 
 import {
     Card,
