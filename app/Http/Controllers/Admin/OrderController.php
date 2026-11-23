@@ -13,6 +13,7 @@ use App\Services\Orders\OrderPaymentService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -182,23 +183,43 @@ class OrderController extends Controller
     /**
      * Открывает квитанцию об оплате заказа.
      */
-    public function downloadPaymentReceipt(Order $order)
+    public function downloadPaymentReceipt(Order $order): StreamedResponse
     {
         $payment = $order->payment;
 
         abort_unless($payment?->receipt_path, 404);
 
-        abort_unless(
-            Storage::disk('local')->exists($payment->receipt_path),
-            404,
-        );
+        $disk = Storage::disk('local');
 
-        return Storage::disk('local')->response(
-            $payment->receipt_path,
-            $payment->receipt_name,
+        abort_unless($disk->exists($payment->receipt_path), 404);
+
+        $stream = $disk->readStream($payment->receipt_path);
+
+        abort_if($stream === false, 404);
+
+        // Определяем MIME-тип файла по его содержимому.
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+
+        $mimeType = $finfo->file(
+            stream_get_meta_data($stream)['uri'],
+        ) ?: 'application/octet-stream';
+
+        return response()->stream(
+            static function () use ($stream): void {
+                try {
+                    fpassthru($stream);
+                } finally {
+                    if (is_resource($stream)) {
+                        fclose($stream);
+                    }
+                }
+            },
+            200,
             [
+                'Content-Type' => $mimeType,
                 'Content-Disposition' => 'inline; filename="' .
                     addslashes($payment->receipt_name) . '"',
+                'X-Content-Type-Options' => 'nosniff',
             ],
         );
     }

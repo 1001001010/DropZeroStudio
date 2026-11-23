@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admins\AdminController;
 use App\Http\Controllers\DropController;
 use App\Http\Controllers\LegalController;
+use App\Http\Controllers\Admin\CdekLocationController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\SkinController;
 use App\Http\Controllers\Admin\{OrderController, OrderPaymentController};
@@ -117,6 +118,20 @@ Route::middleware(['auth', 'admin'])
 
                 Route::post('/{document}/versions/{version}/publish', 'publishVersion')
                     ->name('versions.publish');
+            });
+
+        Route::prefix('cdek')
+            ->name('cdek.')
+            ->group(function () {
+                Route::get('/cities', [
+                    CdekLocationController::class,
+                    'cities',
+                ])->name('cities');
+
+                Route::get('/pickup-points', [
+                    CdekLocationController::class,
+                    'pickupPoints',
+                ])->name('pickup-points');
             });
 
         /*

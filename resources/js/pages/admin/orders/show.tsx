@@ -7,7 +7,7 @@ import { OrderGeneralInfo } from '@/components/admin/orders/order-general-info'
 import { OrderCustomer } from '@/components/admin/orders/order-customer'
 import { OrderItems } from '@/components/admin/orders/order-items'
 import { OrderPayment } from '@/components/admin/orders/order-payment'
-import { OrderDelivery } from '@/components/admin/orders/order-delivery'
+import { OrderDelivery } from '@/components/admin/orders/delivery/order-delivery'
 import { OrderHistory } from '@/components/admin/orders/order-history'
 
 import { Button } from '@/components/ui/button'
@@ -85,6 +85,7 @@ export default function OrderShowPage({ order }: OrderShowPageProps) {
                                 currency={order.currency}
                             />
 
+                            <OrderDelivery order={order} />
                             <OrderHistory events={order.history} />
                         </div>
 
@@ -92,7 +93,7 @@ export default function OrderShowPage({ order }: OrderShowPageProps) {
                         <aside className="min-w-0 space-y-6">
                             <OrderCustomer
                                 order={order}
-                                address={order.delivery?.address ?? null}
+                                address={order.shipment?.address ?? null}
                             />
 
                             <OrderPayment
@@ -101,8 +102,6 @@ export default function OrderShowPage({ order }: OrderShowPageProps) {
                                 total={Number(order.total)}
                                 currency={order.currency}
                             />
-
-                            <OrderDelivery order={order} />
                         </aside>
                     </div>
                 </main>

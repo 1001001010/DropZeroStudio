@@ -377,16 +377,10 @@ export type PaymentStatus =
     | 'refunded'
     | 'partially_refunded'
 
+/**
+ * Статусы отправления СДЭК.
+ */
 export type ShipmentStatus =
-    | 'not_shipped'
-    | 'preparing'
-    | 'in_transit'
-    | 'delivered'
-    | 'returned'
-
-
-/** Статусы доставки заказа. */
-export type DeliveryStatus =
     | 'not_shipped'
     | 'preparing'
     | 'in_transit'
@@ -495,16 +489,16 @@ export type OrderPayment = {
 }
 
 /** Информация о доставке заказа. */
-export interface OrderDelivery {
-    status: DeliveryStatus
-    provider: string | null
-    trackingNumber: string | null
-    recipientName: string | null
-    phone: string | null
-    address: string | null
-    rawResponse: Record<string, unknown> | null
-    OrderShipment: OrderShipment
-}
+// export interface OrderDelivery {
+//     status: DeliveryStatus
+//     provider: string | null
+//     trackingNumber: string | null
+//     recipientName: string | null
+//     phone: string | null
+//     address: string | null
+//     rawResponse: Record<string, unknown> | null
+//     OrderShipment: OrderShipment
+// }
 
 /**
  * Событие изменения статуса заказа.
@@ -559,7 +553,6 @@ export type Order = {
     items: OrderItem[]
     payment: OrderPayment | null
     shipment: OrderShipment | null
-    delivery: OrderDelivery | null
 }
 
 /** Данные статистики заказов. */
@@ -570,7 +563,12 @@ export interface OrdersStats {
     revenue: number
 }
 
-export type OrderShipment = {
+/**
+ * Информация об отправлении заказа.
+ *
+ * Один заказ — одно отправление.
+ */
+export interface OrderShipment {
     id: number
     order_id: number
 
@@ -650,4 +648,373 @@ export interface StoreOrderFormData {
     currency: string
     admin_note: string
     items: StoreOrderItemData[]
+}
+
+// =============================================================================
+// Orders / Shipment Data
+// =============================================================================
+
+/**
+ * Способ передачи отправления СДЭК.
+ */
+export type CdekLocationType = 'pvz' | 'address'
+
+/**
+ * Город, найденный через API СДЭК.
+ */
+interface CdekCity {
+    code: number
+    city_uuid: string | null
+    city: string
+    country_code: string | null
+    country: string | null
+    region: string | null
+    region_code: string | null
+    sub_region: string | null
+    fias_guid: string | null
+    longitude: number | null
+    latitude: number | null
+    time_zone: string | null
+}
+
+/**
+ * Пункт выдачи СДЭК.
+ */
+export interface CdekPickupPoint {
+    code: string
+    name: string
+    address: string
+    city: string
+    region: string | null
+    postal_code: string | null
+    latitude: number | null
+    longitude: number | null
+    work_time: string | null
+}
+
+/**
+ * Место отправления или получения.
+ */
+export interface CdekLocationData {
+    type: CdekLocationType
+    point_code: string | null
+    address: string | null
+}
+
+/**
+ * Контактные данные отправителя.
+ */
+export interface CdekSender {
+    name: string
+    company: string
+    phone: string
+    city: string
+    city_code: number | null
+    address: string | null
+}
+
+/**
+ * Контактные данные получателя.
+ */
+export interface CdekRecipient {
+    name: string
+    phone: string
+    city: string
+    city_code: number | null
+    postal_code: string | null
+    address: string | null
+}
+
+/**
+ * Размеры и вес посылки.
+ */
+export interface CdekPackage {
+    weight: number
+    length: number
+    width: number
+    height: number
+    comment: string
+}
+
+/**
+ * Информация о тарифе СДЭК.
+ */
+export interface CdekTariff {
+    code: number
+    name: string
+    price: number
+    currency: string
+    delivery_min: number | null
+    delivery_max: number | null
+}
+
+/**
+ * Техническая информация об отправлении СДЭК.
+ */
+export interface CdekShipmentMetadata {
+    uuid: string | null
+    request_uuid: string | null
+    status: string | null
+    tracking_number: string | null
+    last_synced_at: string | null
+}
+
+/**
+ * Полная информация о доставке СДЭК,
+ * хранящаяся в OrderShipment.shipping_data.
+ */
+export interface CdekShippingData {
+    provider: 'cdek'
+
+    shipment: CdekLocationData
+    delivery: CdekLocationData
+
+    sender: CdekSender
+    recipient: CdekRecipient
+
+    package: CdekPackage
+    tariff: CdekTariff | null
+
+    cdek: CdekShipmentMetadata
+}
+
+/**
+ * Способ доставки.
+ */
+export type DeliveryType = 'pvz' | 'address'
+
+/**
+ * Данные отправителя.
+ */
+export interface SenderForm {
+    name: string
+    company: string
+    phone: string
+    city: string
+    cityCode: number | null
+    deliveryType: DeliveryType
+    address: string
+    pickupPoint: string
+}
+
+/**
+ * Данные получателя.
+ */
+export interface RecipientForm {
+    name: string
+    phone: string
+    city: string
+    cityCode: number | null
+    deliveryType: DeliveryType
+    address: string
+    pickupPoint: string
+}
+
+/**
+ * Параметры упаковки.
+ */
+export interface PackageForm {
+    weight: number | ''
+    length: number | ''
+    width: number | ''
+    height: number | ''
+    comment: string
+}
+/**
+ * Данные города СДЭК.
+ */
+export interface CdekCityOption {
+    code: number
+    city: string
+    region: string | null
+    country: string
+}
+
+/**
+ * Данные пункта выдачи СДЭК.
+ */
+export interface CdekPickupPointOption {
+    code: string
+    name: string
+    address: string
+    city: string
+    region: string | null
+    postalCode: string | null
+    latitude: number | null
+    longitude: number | null
+    workTime: string | null
+}
+
+/**
+ * Тариф доставки.
+ */
+export interface DeliveryTariff {
+    code: number
+    name: string
+    price: number
+    currency: string
+    deliveryMin: number | null
+    deliveryMax: number | null
+}
+/**
+ * Общие пропсы формы локации.
+ */
+export interface DeliveryLocationFormProps {
+    title: string
+    form: SenderForm | RecipientForm
+    isSender?: boolean
+    onChange: (
+        key: keyof SenderForm | keyof RecipientForm,
+        value: string | number | null,
+    ) => void
+}
+
+/**
+ * Пропсы формы упаковки.
+ */
+export interface DeliveryPackageFormProps {
+    form: PackageForm
+    onChange: (key: keyof PackageForm, value: string | number) => void
+}
+
+/**
+ * Пропсы компонента тарифов.
+ */
+export interface DeliveryTariffsProps {
+    tariffs: DeliveryTariff[]
+    selectedTariff: number | null
+    loading: boolean
+    onCalculate: () => void
+    onSelect: (tariffCode: number) => void
+}
+
+/**
+ * Пропсы информации об отправлении.
+ */
+export interface DeliveryShipmentInfoProps {
+    shipment: OrderShipment | null
+}
+
+import type { OrderShipment } from '@/types/index.d'
+
+/**
+ * Способ доставки СДЭК.
+ */
+export type DeliveryType = 'pvz' | 'address'
+
+/**
+ * Данные отправителя.
+ */
+export interface SenderForm {
+    name: string
+    company: string
+    phone: string
+    city: string
+    cityCode: number | null
+    deliveryType: DeliveryType
+    address: string
+    pickupPoint: string
+}
+
+/**
+ * Данные получателя.
+ */
+export interface RecipientForm {
+    name: string
+    phone: string
+    city: string
+    cityCode: number | null
+    deliveryType: DeliveryType
+    address: string
+    pickupPoint: string
+}
+
+/**
+ * Параметры упаковки.
+ */
+export interface PackageForm {
+    weight: number | ''
+    length: number | ''
+    width: number | ''
+    height: number | ''
+    comment: string
+}
+
+/**
+ * Данные города СДЭК.
+ */
+export interface CdekCityOption {
+    code: number
+    city: string
+    region: string | null
+    country: string
+}
+
+/**
+ * Данные пункта выдачи СДЭК.
+ */
+export interface CdekPickupPointOption {
+    code: string
+    name: string
+    address: string
+    city: string
+    region: string | null
+    postalCode: string | null
+    latitude: number | null
+    longitude: number | null
+    workTime: string | null
+}
+
+/**
+ * Тариф доставки.
+ */
+export interface DeliveryTariff {
+    code: number
+    name: string
+    price: number
+    currency: string
+    deliveryMin: number | null
+    deliveryMax: number | null
+}
+
+/**
+ * Пропсы формы отправителя или получателя.
+ */
+export interface DeliveryLocationFormProps {
+    title: string
+    form: SenderForm | RecipientForm
+    isSender?: boolean
+    onChange: (
+        key: keyof SenderForm | keyof RecipientForm,
+        value: string | number | null,
+    ) => void
+}
+
+/**
+ * Пропсы формы упаковки.
+ */
+export interface DeliveryPackageFormProps {
+    form: PackageForm
+    onChange: (
+        key: keyof PackageForm,
+        value: string | number,
+    ) => void
+}
+
+/**
+ * Пропсы компонента тарифов.
+ */
+export interface DeliveryTariffsProps {
+    tariffs: DeliveryTariff[]
+    selectedTariff: number | null
+    loading: boolean
+    onCalculate: () => void
+    onSelect: (tariffCode: number) => void
+}
+
+/**
+ * Пропсы информации об отправлении.
+ */
+export interface DeliveryShipmentInfoProps {
+    shipment: OrderShipment | null
 }

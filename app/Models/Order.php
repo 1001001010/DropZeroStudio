@@ -75,9 +75,9 @@ class Order extends Model
     }
 
     /**
-     * Платежи заказа.
+     * Платёж заказа.
      *
-     * @return HasMany<OrderPayment, $this>
+     * @return HasOne<OrderPayment, $this>
      */
     public function payment(): HasOne
     {

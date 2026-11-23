@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'cdek' => [
+        'test_mode' => env('CDEK_TEST_MODE', true),
+        'client_id' => env('CDEK_CLIENT_ID'),
+        'client_secret' => env('CDEK_CLIENT_SECRET'),
+        'api_url' => env('CDEK_API_URL', 'https://api.edu.cdek.ru/v2'),
+    ],
 ];
