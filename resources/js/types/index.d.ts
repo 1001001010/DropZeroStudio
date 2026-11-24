@@ -498,15 +498,20 @@ export interface OrderPayment {
 // Orders / History
 // =============================================================================
 
-/** Событие изменения статуса заказа. */
+export type OrderHistoryEventType =
+    | 'order_status'
+    | 'shipment'
+    | 'payment'
+
 export interface OrderHistoryEvent {
     id: number
+    event_type: OrderHistoryEventType
+    title: string | null
     old_status: OrderStatus | null
-    new_status: OrderStatus
+    new_status: OrderStatus | null
     comment: string | null
     changed_by: number | null
     created_at: string
-
     changer?: {
         id: number
         name: string

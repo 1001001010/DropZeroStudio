@@ -22,6 +22,8 @@ class OrderStatusHistory extends Model
      */
     protected $fillable = [
         'order_id',
+        'event_type',
+        'title',
         'old_status',
         'new_status',
         'comment',
