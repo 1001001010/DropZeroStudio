@@ -1,162 +1,211 @@
 
-import { useState } from 'react'
-
 import {
     CalendarDays,
-    CheckCircle2,
     Clock3,
     Copy,
-    ExternalLink,
-    FileJson,
     MapPin,
     Package,
-    Phone,
     Truck,
     UserRound,
-    XCircle,
-    type LucideIcon,
 } from 'lucide-react'
 
-import { toast } from '@/components/ui/toast'
-
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card'
+
 import { Separator } from '@/components/ui/separator'
 
-import type { ShipmentStatus } from '@/types'
-import type { DeliveryShipmentInfoProps } from '@/types/index'
+import type { OrderShipment } from '@/types'
 
 /**
- * Конфигурация отображения статусов отправления.
+ * Структура JSON-объекта.
+ *
+ * Используется для безопасного чтения вложенных данных
+ * из ответа СДЭК и shipping_data.
  */
-const SHIPMENT_STATUS_CONFIG: Record<
-    ShipmentStatus,
-    {
-        label: string
-        variant: 'default' | 'secondary' | 'destructive' | 'outline'
-        icon: LucideIcon
-    }
-> = {
-    not_shipped: {
-        label: 'Не отправлен',
-        variant: 'outline',
-        icon: Package,
-    },
-    preparing: {
-        label: 'Готовится к отправке',
-        variant: 'secondary',
-        icon: Clock3,
-    },
-    in_transit: {
-        label: 'В пути',
-        variant: 'default',
-        icon: Truck,
-    },
-    delivered: {
-        label: 'Доставлен',
-        variant: 'secondary',
-        icon: CheckCircle2,
-    },
-    returned: {
-        label: 'Возвращён',
-        variant: 'destructive',
-        icon: XCircle,
-    },
+type JsonRecord = Record<string, unknown>
+
+/**
+ * Дополнительные поля отправления из миграций.
+ *
+ * Пока они могут отсутствовать в старых TypeScript-типах.
+ * После обновления index.d.ts этот тип можно будет убрать.
+ */
+type ExtendedShipment = OrderShipment & {
+    from_city_code?: number | null
+    to_city_code?: number | null
+    from_city?: string | null
+    to_city?: string | null
+    delivery_mode?: string | null
+    tariff_code?: number | null
+    tariff_name?: string | null
+    pickup_point_code?: string | null
+    pickup_point_address?: string | null
+    weight?: number | null
+    length?: number | null
+    width?: number | null
+    height?: number | null
+    delivery_cost?: string | number | null
+    currency?: string | null
+    label_path?: string | null
 }
 
 /**
- * Форматирует дату для отображения.
- *
- * @param value Дата в строковом формате.
- * @returns Отформатированная дата или сообщение об отсутствии данных.
+ * Преобразует неизвестное значение в объект.
  */
-function formatDate(value: string | null): string {
+function asRecord(value: unknown): JsonRecord {
+    if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+    ) {
+        return value as JsonRecord
+    }
+
+    return {}
+}
+
+/**
+ * Возвращает строковое значение либо резервное значение.
+ */
+function getString(
+    value: unknown,
+    fallback = 'Не указано',
+): string {
+    if (
+        typeof value === 'string' ||
+        typeof value === 'number'
+    ) {
+        const result = String(value).trim()
+
+        return result || fallback
+    }
+
+    return fallback
+}
+
+/**
+ * Форматирует дату.
+ */
+function formatDate(value: string | null | undefined): string {
     if (!value) {
-        return 'Не указана'
+        return 'Не указано'
     }
 
     const date = new Date(value)
 
     if (Number.isNaN(date.getTime())) {
-        return 'Некорректная дата'
+        return value
     }
 
     return new Intl.DateTimeFormat('ru-RU', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
     }).format(date)
 }
 
 /**
- * Копирует значение в буфер обмена и отображает результат.
- *
- * @param value Значение для копирования.
- * @param label Название копируемого значения.
+ * Форматирует денежное значение.
  */
-async function copyToClipboard(
-    value: string,
-    label: string,
-): Promise<void> {
-    try {
-        await navigator.clipboard.writeText(value)
+function formatMoney(
+    value: string | number | null | undefined,
+    currency = 'RUB',
+): string {
+    if (value === null || value === undefined || value === '') {
+        return 'Не указано'
+    }
 
-        toast.add({
-            title: `${label} скопирован`,
-            description: 'Данные успешно скопированы в буфер обмена.',
-        })
-    } catch {
-        toast.add({
-            title: 'Не удалось скопировать данные',
-            description: 'Проверьте разрешения браузера на доступ к буферу обмена.',
-        })
+    const amount = Number(value)
+
+    if (!Number.isFinite(amount)) {
+        return String(value)
+    }
+
+    return new Intl.NumberFormat('ru-RU', {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: 2,
+    }).format(amount)
+}
+
+/**
+ * Форматирует статус отправления.
+ */
+function getStatusInfo(status: string) {
+    const statuses: Record<
+        string,
+        { label: string; className: string }
+    > = {
+        not_shipped: {
+            label: 'Не отправлено',
+            className: 'bg-muted text-muted-foreground',
+        },
+        preparing: {
+            label: 'Подготовка',
+            className: 'bg-yellow-500/10 text-yellow-500',
+        },
+        in_transit: {
+            label: 'В пути',
+            className: 'bg-blue-500/10 text-blue-500',
+        },
+        delivered: {
+            label: 'Доставлено',
+            className: 'bg-green-500/10 text-green-500',
+        },
+        returned: {
+            label: 'Возвращено',
+            className: 'bg-red-500/10 text-red-500',
+        },
+    }
+
+    return statuses[status] ?? {
+        label: status || 'Неизвестно',
+        className: 'bg-muted text-muted-foreground',
     }
 }
 
 /**
- * Отдельное информационное поле отправления.
+ * Универсальная строка с названием и значением.
  */
-function InfoField({
+function InfoItem({
     label,
     value,
-    icon: Icon,
     copyable = false,
 }: {
     label: string
-    value: string | null
-    icon?: LucideIcon
+    value: unknown
     copyable?: boolean
 }) {
+    const text = getString(value)
+
     return (
         <div className="min-w-0 space-y-1">
             <p className="text-xs text-muted-foreground">
                 {label}
             </p>
 
-            <div className="flex min-w-0 items-center gap-1.5">
-                {Icon && (
-                    <Icon className="size-3.5 shrink-0 text-muted-foreground" />
-                )}
-
+            <div className="flex min-w-0 items-center gap-2">
                 <p className="min-w-0 break-words text-sm font-medium">
-                    {value || 'Не указано'}
+                    {text}
                 </p>
 
-                {copyable && value && (
-                    <Button
+                {copyable && text !== 'Не указано' && (
+                    <button
                         type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-6 shrink-0"
-                        onClick={() => copyToClipboard(value, label)}
-                        aria-label={`Скопировать: ${label}`}
+                        title="Копировать"
+                        onClick={() => {
+                            void navigator.clipboard.writeText(text)
+                        }}
+                        className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <Copy className="size-3.5" />
-                    </Button>
+                    </button>
                 )}
             </div>
         </div>
@@ -164,218 +213,464 @@ function InfoField({
 }
 
 /**
- * Отображает информацию о созданном отправлении СДЭК.
+ * Секция с заголовком и сеткой параметров.
+ */
+function InfoSection({
+    title,
+    icon,
+    children,
+}: {
+    title: string
+    icon: React.ReactNode
+    children: React.ReactNode
+}) {
+    return (
+        <section className="space-y-4">
+            <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">
+                    {icon}
+                </span>
+
+                <h3 className="text-sm font-semibold">
+                    {title}
+                </h3>
+            </div>
+
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+                {children}
+            </div>
+        </section>
+    )
+}
+
+/**
+ * Выводит информацию об отправлении СДЭК.
  *
- * @param shipment Данные отправления.
+ * Использует одновременно:
+ * - структурированные поля OrderShipment;
+ * - данные отправителя и получателя из shipping_data;
+ * - сохранённый ответ API СДЭК.
+ *
+ * Отсутствующие значения отображаются как «Не указано».
  */
 export function DeliveryShipmentInfo({
     shipment,
-}: DeliveryShipmentInfoProps) {
-    const [technicalInfoOpen, setTechnicalInfoOpen] = useState(false)
+}: {
+    shipment: OrderShipment
+}) {
+    const details = shipment as ExtendedShipment
 
-    if (!shipment) {
-        return null
-    }
+    const shippingData = asRecord(shipment.shipping_data)
 
-    const status = SHIPMENT_STATUS_CONFIG[shipment.status]
-    const StatusIcon = status.icon
+    const sender = asRecord(shippingData.sender)
+    const recipient = asRecord(shippingData.recipient)
+    const response = asRecord(shippingData.response)
 
-    const shippingData = shipment.shipping_data
+    const entity = asRecord(response.entity)
 
-    const formattedShippingData = shippingData
-        ? JSON.stringify(shippingData, null, 2)
-        : null
+    const requests = Array.isArray(response.requests)
+        ? response.requests.map(asRecord)
+        : []
 
-    const trackingUrl = shipment.tracking_number
-        ? `https://www.cdek.ru/ru/tracking?order_id=${encodeURIComponent(shipment.tracking_number)}`
-        : null
+    const packages = Array.isArray(shippingData.packages)
+        ? shippingData.packages.map(asRecord)
+        : []
+
+    const firstPackage = packages[0] ?? {}
+
+    const status = getStatusInfo(String(shipment.status))
+
+    const shipmentUuid = getString(
+        shipment.provider_order_id ?? shippingData.shipment_uuid,
+    )
+
+    const requestUuid = getString(
+        shippingData.request_uuid ?? requests[0]?.request_uuid,
+    )
+
+    const trackingNumber = getString(shipment.tracking_number)
+
+    const deliveryMode = details.delivery_mode === 'pvz'
+        ? 'До пункта выдачи'
+        : details.delivery_mode === 'address'
+            ? 'До двери'
+            : 'Не указано'
+
+    const currency = details.currency ?? 'RUB'
 
     return (
-        <section className="space-y-4 rounded-lg border bg-muted/20 p-3">
-            {/* Заголовок и статус */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-background">
-                        <Truck className="size-4 text-muted-foreground" />
-                    </div>
-
-                    <div className="space-y-0.5">
-                        <h3 className="text-sm font-medium">
-                            Отправление СДЭК
-                        </h3>
-
-                        <p className="text-xs text-muted-foreground">
-                            Информация о доставке заказа
-                        </p>
-                    </div>
-                </div>
-
-                <Badge
-                    variant={status.variant}
-                    className="gap-1.5"
-                >
-                    <StatusIcon className="size-3.5" />
-                    {status.label}
-                </Badge>
-            </div>
-
-            <Separator />
-
-            {/* Трек-номер */}
-            <div className="rounded-lg border bg-background p-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0 space-y-1">
-                        <p className="text-xs text-muted-foreground">
-                            Трек-номер
-                        </p>
-
-                        <p className="break-all font-mono text-base font-semibold">
-                            {shipment.tracking_number || 'Ещё не присвоен'}
-                        </p>
-                    </div>
-
-                    {shipment.tracking_number && (
+        <Card className="overflow-hidden">
+            {/* Заголовок отправления */}
+            <CardHeader className="space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                size="icon"
-                                variant="outline"
-                                onClick={() =>
-                                    copyToClipboard(
-                                        shipment.tracking_number!,
-                                        'Трек-номер',
-                                    )
-                                }
-                                aria-label="Скопировать трек-номер"
-                            >
-                                <Copy className="size-4" />
-                            </Button>
+                            <Truck className="size-5 text-muted-foreground" />
 
-                            {trackingUrl && (
-                                <Button
-                                    asChild
-                                    size="sm"
-                                    variant="outline"
-                                >
-                                    <a
-                                        href={trackingUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        <ExternalLink className="size-3.5" />
-                                        Отследить
-                                    </a>
-                                </Button>
-                            )}
+                            <CardTitle className="text-base">
+                                Отправление СДЭК
+                            </CardTitle>
                         </div>
-                    )}
-                </div>
-            </div>
 
-            {/* Основная информация */}
-            <div className="grid gap-4 sm:grid-cols-2">
-                <InfoField
-                    label="ID отправления СДЭК"
-                    value={shipment.provider_order_id}
-                    icon={Package}
-                    copyable
-                />
-
-                <InfoField
-                    label="Получатель"
-                    value={shipment.recipient_name}
-                    icon={UserRound}
-                />
-
-                <InfoField
-                    label="Телефон"
-                    value={shipment.phone}
-                    icon={Phone}
-                    copyable
-                />
-
-                <InfoField
-                    label="Страна"
-                    value={shipment.country}
-                    icon={MapPin}
-                />
-
-                <InfoField
-                    label="Город"
-                    value={shipment.city}
-                    icon={MapPin}
-                />
-
-                <InfoField
-                    label="Индекс"
-                    value={shipment.postal_code}
-                    icon={MapPin}
-                    copyable
-                />
-
-                <InfoField
-                    label="Адрес / ПВЗ"
-                    value={shipment.address}
-                    icon={MapPin}
-                />
-            </div>
-
-            <Separator />
-
-            {/* Даты отправления */}
-            <div className="grid gap-3 sm:grid-cols-2">
-                <InfoField
-                    label="Дата отправки"
-                    value={formatDate(shipment.shipped_at)}
-                    icon={CalendarDays}
-                />
-
-                <InfoField
-                    label="Дата доставки"
-                    value={formatDate(shipment.delivered_at)}
-                    icon={CalendarDays}
-                />
-            </div>
-
-            {/* Техническая информация */}
-            <Collapsible
-                open={technicalInfoOpen}
-                onOpenChange={setTechnicalInfoOpen}
-            >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                        <FileJson className="size-4 text-muted-foreground" />
-
-                        <span className="text-sm font-medium">
-                            Технические данные
-                        </span>
+                        <p className="text-xs text-muted-foreground">
+                            Отправление №{shipment.id}
+                        </p>
                     </div>
 
-                    <CollapsibleTrigger asChild>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                        >
-                            {technicalInfoOpen
-                                ? 'Скрыть'
-                                : 'Показать JSON'}
-                        </Button>
-                    </CollapsibleTrigger>
+                    <span
+                        className={`w-fit rounded-full px-3 py-1 text-xs font-medium ${status.className}`}
+                    >
+                        {status.label}
+                    </span>
                 </div>
 
-                <CollapsibleContent className="pt-3">
-                    {formattedShippingData ? (
-                        <pre className="max-h-80 overflow-auto rounded-lg border bg-background p-3 text-xs leading-relaxed">
-                            {formattedShippingData}
-                        </pre>
-                    ) : (
-                        <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                            Технические данные отсутствуют.
+                <Separator />
+
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <InfoItem
+                        label="Номер отслеживания"
+                        value={trackingNumber}
+                        copyable
+                    />
+
+                    <InfoItem
+                        label="UUID отправления"
+                        value={shipmentUuid}
+                        copyable
+                    />
+
+                    <InfoItem
+                        label="UUID запроса"
+                        value={requestUuid}
+                        copyable
+                    />
+                </div>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+                {/* Основная информация */}
+                <InfoSection
+                    title="Информация о доставке"
+                    icon={<Package className="size-4" />}
+                >
+                    <InfoItem
+                        label="Служба доставки"
+                        value={shipment.provider?.toUpperCase()}
+                    />
+
+                    <InfoItem
+                        label="Способ доставки"
+                        value={deliveryMode}
+                    />
+
+                    <InfoItem
+                        label="Название тарифа"
+                        value={details.tariff_name}
+                    />
+
+                    <InfoItem
+                        label="Код тарифа"
+                        value={details.tariff_code}
+                    />
+
+                    <InfoItem
+                        label="Стоимость доставки"
+                        value={formatMoney(details.delivery_cost, currency)}
+                    />
+
+                    <InfoItem
+                        label="Валюта"
+                        value={currency}
+                    />
+                </InfoSection>
+
+                <Separator />
+
+                {/* Отправитель */}
+                <InfoSection
+                    title="Отправитель"
+                    icon={<UserRound className="size-4" />}
+                >
+                    <InfoItem
+                        label="ФИО"
+                        value={sender.name}
+                    />
+
+                    <InfoItem
+                        label="Компания"
+                        value={sender.company}
+                    />
+
+                    <InfoItem
+                        label="Телефон"
+                        value={sender.phone}
+                    />
+
+                    <InfoItem
+                        label="Город"
+                        value={sender.city ?? details.from_city}
+                    />
+
+                    <InfoItem
+                        label="Код города СДЭК"
+                        value={sender.city_code ?? details.from_city_code}
+                    />
+
+                    <InfoItem
+                        label="Код пункта отправления"
+                        value={sender.shipment_point}
+                        copyable
+                    />
+
+                    <InfoItem
+                        label="Адрес пункта отправления"
+                        value={
+                            sender.address
+                            ?? asRecord(sender.from_location).address
+                        }
+                    />
+                </InfoSection>
+
+                <Separator />
+
+                {/* Получатель */}
+                <InfoSection
+                    title="Получатель"
+                    icon={<MapPin className="size-4" />}
+                >
+                    <InfoItem
+                        label="ФИО"
+                        value={shipment.recipient_name || recipient.name}
+                    />
+
+                    <InfoItem
+                        label="Телефон"
+                        value={shipment.phone || recipient.phone}
+                    />
+
+                    <InfoItem
+                        label="Город"
+                        value={shipment.city || recipient.city || details.to_city}
+                    />
+
+                    <InfoItem
+                        label="Код города СДЭК"
+                        value={recipient.city_code ?? details.to_city_code}
+                    />
+
+                    <InfoItem
+                        label="Почтовый индекс"
+                        value={shipment.postal_code ?? recipient.postal_code}
+                    />
+
+                    <InfoItem
+                        label="Адрес получателя"
+                        value={shipment.address || recipient.address}
+                    />
+
+                    <InfoItem
+                        label="Код пункта выдачи"
+                        value={
+                            shipment.pickup_point_code
+                            ?? recipient.delivery_point
+                        }
+                        copyable
+                    />
+
+                    <InfoItem
+                        label="Адрес пункта выдачи"
+                        value={shipment.pickup_point_address}
+                    />
+
+                    <InfoItem
+                        label="Страна"
+                        value={shipment.country}
+                    />
+                </InfoSection>
+
+                <Separator />
+
+                {/* Посылка */}
+                <InfoSection
+                    title="Параметры посылки"
+                    icon={<Package className="size-4" />}
+                >
+                    <InfoItem
+                        label="Вес"
+                        value={
+                            details.weight ?? firstPackage.weight
+                                ? `${details.weight ?? firstPackage.weight} г`
+                                : null
+                        }
+                    />
+
+                    <InfoItem
+                        label="Длина"
+                        value={
+                            details.length ?? firstPackage.length
+                                ? `${details.length ?? firstPackage.length} см`
+                                : null
+                        }
+                    />
+
+                    <InfoItem
+                        label="Ширина"
+                        value={
+                            details.width ?? firstPackage.width
+                                ? `${details.width ?? firstPackage.width} см`
+                                : null
+                        }
+                    />
+
+                    <InfoItem
+                        label="Высота"
+                        value={
+                            details.height ?? firstPackage.height
+                                ? `${details.height ?? firstPackage.height} см`
+                                : null
+                        }
+                    />
+
+                    <InfoItem
+                        label="Количество мест"
+                        value={packages.length || 1}
+                    />
+
+                    <InfoItem
+                        label="Описание посылки"
+                        value={firstPackage.comment}
+                    />
+                </InfoSection>
+
+                <Separator />
+
+                {/* Даты */}
+                <InfoSection
+                    title="История отправления"
+                    icon={<CalendarDays className="size-4" />}
+                >
+                    <InfoItem
+                        label="Создано в системе"
+                        value={formatDate(shipment.created_at)}
+                    />
+
+                    <InfoItem
+                        label="Передано в доставку"
+                        value={formatDate(shipment.shipped_at)}
+                    />
+
+                    <InfoItem
+                        label="Доставлено"
+                        value={formatDate(shipment.delivered_at)}
+                    />
+
+                    <InfoItem
+                        label="Последнее обновление"
+                        value={formatDate(shipment.updated_at)}
+                    />
+                </InfoSection>
+
+                {/* Ответ СДЭК */}
+                <Separator />
+
+                <section className="space-y-4">
+                    <div className="flex items-center gap-2">
+                        <Clock3 className="size-4 text-muted-foreground" />
+
+                        <h3 className="text-sm font-semibold">
+                            Ответ СДЭК
+                        </h3>
+                    </div>
+
+                    {requests.length > 0 ? (
+                        <div className="space-y-3">
+                            {requests.map((request, index) => (
+                                <div
+                                    key={String(request.request_uuid ?? index)}
+                                    className="rounded-lg border p-3"
+                                >
+                                    <div className="mb-3 flex items-center justify-between gap-3">
+                                        <p className="text-sm font-medium">
+                                            Запрос {index + 1}
+                                        </p>
+
+                                        <span className="rounded-full bg-muted px-2 py-1 text-xs">
+                                            {getString(request.state)}
+                                        </span>
+                                    </div>
+
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <InfoItem
+                                            label="UUID запроса"
+                                            value={request.request_uuid}
+                                            copyable
+                                        />
+
+                                        <InfoItem
+                                            label="Тип операции"
+                                            value={request.type}
+                                        />
+
+                                        <InfoItem
+                                            label="Дата запроса"
+                                            value={formatDate(
+                                                getString(request.date_time, ''),
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
                         </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">
+                            Информация о запросах СДЭК отсутствует.
+                        </p>
                     )}
-                </CollapsibleContent>
-            </Collapsible>
-        </section>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <InfoItem
+                            label="UUID сущности СДЭК"
+                            value={entity.uuid}
+                            copyable
+                        />
+
+                        <InfoItem
+                            label="UUID отправления в базе"
+                            value={shipment.provider_order_id}
+                            copyable
+                        />
+                    </div>
+                </section>
+
+                {/* Дополнительная информация */}
+                {Boolean(shippingData.comment) && (
+                    <>
+                        <Separator />
+
+                        <section className="space-y-2">
+                            <h3 className="text-sm font-semibold">
+                                Комментарий к отправлению
+                            </h3>
+
+                            <p className="text-sm text-muted-foreground">
+                                {getString(shippingData.comment)}
+                            </p>
+                        </section>
+                    </>
+                )}
+
+                {/* Этикетка */}
+                {details.label_path && (
+                    <>
+                        <Separator />
+
+                        <InfoItem
+                            label="Путь к этикетке"
+                            value={details.label_path}
+                        />
+                    </>
+                )}
+            </CardContent>
+        </Card>
     )
 }

@@ -525,7 +525,6 @@ export interface OrderHistoryEvent {
 export interface OrderShipment {
     id: number
     order_id: number
-
     provider: string | null
     provider_order_id: string | null
     tracking_number: string | null
@@ -533,11 +532,32 @@ export interface OrderShipment {
 
     recipient_name: string
     phone: string
-
     country: string
     city: string
     postal_code: string | null
     address: string
+
+    from_city_code: number | null
+    to_city_code: number | null
+    from_city: string | null
+    to_city: string | null
+
+    delivery_mode: 'pvz' | 'address' | null
+    tariff_code: number | null
+    tariff_name: string | null
+
+    pickup_point_code: string | null
+    pickup_point_address: string | null
+
+    weight: number | null
+    length: number | null
+    width: number | null
+    height: number | null
+
+    delivery_cost: string | number | null
+    currency: string | null
+
+    label_path: string | null
 
     shipping_data: Record<string, unknown> | null
 
@@ -808,7 +828,7 @@ export interface SenderForm {
     cityCode: number | null
     deliveryType: DeliveryType
     address: string
-    pickupPoint: string
+    pickupPoint: CdekPickupPoint | null
 }
 
 /** Данные получателя в форме. */
@@ -819,7 +839,7 @@ export interface RecipientForm {
     cityCode: number | null
     deliveryType: DeliveryType
     address: string
-    pickupPoint: string
+    pickupPoint: CdekPickupPoint | null
 }
 
 // =============================================================================
@@ -900,14 +920,19 @@ export interface CdekShippingData {
 // CDEK / Component Props
 // =============================================================================
 
-/** Пропсы формы отправителя или получателя. */
+export type DeliveryFormChangeValue =
+    | string
+    | number
+    | CdekPickupPoint
+    | null
+
 export interface DeliveryLocationFormProps {
     title: string
     form: SenderForm | RecipientForm
     isSender?: boolean
     onChange: (
         key: keyof SenderForm | keyof RecipientForm,
-        value: string | number | null,
+        value: DeliveryFormChangeValue,
     ) => void
 }
 

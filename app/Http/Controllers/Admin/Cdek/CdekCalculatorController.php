@@ -20,22 +20,68 @@ class CdekCalculatorController extends Controller
     public function calculate(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'from_location' => ['required', 'array'],
-            'from_location.code' => ['required', 'integer'],
-            'from_location.address' => ['nullable', 'string'],
+            // Города обязательны независимо от способа доставки.
+            'from_location' => [
+                'required',
+                'array',
+            ],
+            'from_location.code' => [
+                'required',
+                'integer',
+            ],
+            'from_location.address' => [
+                'nullable',
+                'string',
+            ],
 
-            'to_location' => ['required', 'array'],
-            'to_location.code' => ['required', 'integer'],
-            'to_location.address' => ['nullable', 'string'],
+            'to_location' => [
+                'required',
+                'array',
+            ],
+            'to_location.code' => [
+                'required',
+                'integer',
+            ],
+            'to_location.address' => [
+                'nullable',
+                'string',
+            ],
 
-            'shipment_point' => ['nullable', 'string'],
-            'delivery_point' => ['nullable', 'string'],
+            // ПВЗ передаются дополнительно, если выбрана доставка через ПВЗ.
+            'shipment_point' => [
+                'nullable',
+                'string',
+            ],
+            'delivery_point' => [
+                'nullable',
+                'string',
+            ],
 
-            'packages' => ['required', 'array', 'min:1'],
-            'packages.*.weight' => ['required', 'numeric', 'min:1'],
-            'packages.*.length' => ['required', 'numeric', 'min:1'],
-            'packages.*.width' => ['required', 'numeric', 'min:1'],
-            'packages.*.height' => ['required', 'numeric', 'min:1'],
+            'packages' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'packages.*.weight' => [
+                'required',
+                'numeric',
+                'min:1',
+            ],
+            'packages.*.length' => [
+                'required',
+                'numeric',
+                'min:1',
+            ],
+            'packages.*.width' => [
+                'required',
+                'numeric',
+                'min:1',
+            ],
+            'packages.*.height' => [
+                'required',
+                'numeric',
+                'min:1',
+            ],
         ]);
 
         $tariffs = $this->calculatorService->calculate(

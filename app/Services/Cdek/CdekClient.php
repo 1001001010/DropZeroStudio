@@ -142,6 +142,10 @@ class CdekClient
 
         $result = $response->json();
 
+        if ($response->noContent() || $response->body() === '') {
+            return [];
+        }
+
         if (!is_array($result)) {
             throw new RuntimeException(
                 'CDEK API returned an invalid response.'
@@ -199,5 +203,15 @@ class CdekClient
         }
 
         return $response;
+    }
+
+    /**
+     * Выполняет DELETE-запрос к API СДЭК.
+     *
+     * @throws ConnectionException
+     */
+    public function delete(string $endpoint): array
+    {
+        return $this->request('DELETE', $endpoint);
     }
 }

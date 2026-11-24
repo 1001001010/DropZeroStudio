@@ -17,8 +17,10 @@ class CdekCalculatorService
     /**
      * Рассчитывает стоимость доставки по доступным тарифам.
      *
-     * Для отправления и получения можно указать адрес или ПВЗ СДЭК.
-     * Вес указывается в граммах, габариты — в сантиметрах.
+     * Города отправления и получения обязательны всегда.
+     * Пункты выдачи передаются дополнительно, если выбрана доставка через ПВЗ.
+     *
+     * Вес указывается в граммах, размеры — в сантиметрах.
      *
      * @param array<string, int|string> $fromLocation
      * @param array<string, int|string> $toLocation
@@ -38,68 +40,31 @@ class CdekCalculatorService
         ?string $shipmentPoint = null,
         ?string $deliveryPoint = null,
     ): array {
-        if ($fromLocation === [] && !$shipmentPoint) {
-            throw new InvalidArgumentException(
-                'Укажите адрес или пункт отправления СДЭК.'
-            );
-        }
+        $this->validateLocations(
+            $fromLocation,
+            $toLocation,
+            $shipmentPoint,
+            $deliveryPoint,
+        );
 
-        if ($toLocation === [] && !$deliveryPoint) {
-            throw new InvalidArgumentException(
-                'Укажите адрес или пункт получения СДЭК.'
-            );
-        }
+        $this->validatePackages($packages);
 
-        if (empty($fromLocation)) {
-            throw new InvalidArgumentException(
-                'Необходимо указать город отправления.'
-            );
-        }
-
-        if (empty($toLocation)) {
-            throw new InvalidArgumentException(
-                'Необходимо указать город получения.'
-            );
-        }
-
-        // if ($fromLocation !== [] && $shipmentPoint) {
-        //     throw new InvalidArgumentException(
-        //         'Нельзя одновременно указывать адрес и ПВЗ отправления.'
-        //     );
-        // }
-
-        // if ($toLocation !== [] && $deliveryPoint) {
-        //     throw new InvalidArgumentException(
-        //         'Нельзя одновременно указывать адрес и ПВЗ получения.'
-        //     );
-        // }
-
-        if ($packages === []) {
-            throw new InvalidArgumentException(
-                'Необходимо указать хотя бы одну посылку.'
-            );
-        }
-
+        // Основные параметры расчёта.
         $payload = [
             'type' => 2,
             'currency' => 1,
             'lang' => 'rus',
+            'from_location' => $fromLocation,
+            'to_location' => $toLocation,
             'packages' => $packages,
         ];
 
-        if ($fromLocation !== []) {
-            $payload['from_location'] = $fromLocation;
-        }
-
-        if ($toLocation !== []) {
-            $payload['to_location'] = $toLocation;
-        }
-
-        if ($shipmentPoint) {
+        // При доставке через ПВЗ дополнительно указываем его код.
+        if ($shipmentPoint !== null) {
             $payload['shipment_point'] = $shipmentPoint;
         }
 
-        if ($deliveryPoint) {
+        if ($deliveryPoint !== null) {
             $payload['delivery_point'] = $deliveryPoint;
         }
 
@@ -112,11 +77,11 @@ class CdekCalculatorService
 
         if (!is_array($tariffs)) {
             throw new RuntimeException(
-                'СДЭК вернул некорректный ответ при расчёте доставки.'
+                'СДЭК вернул некорректный ответ при расчёте доставки.',
             );
         }
 
-        // Убираем дубликаты тарифов по их коду.
+        // Убираем дубликаты тарифов по коду.
         $uniqueTariffs = [];
 
         foreach ($tariffs as $tariff) {
@@ -129,7 +94,9 @@ class CdekCalculatorService
             $uniqueTariffs[$code] = [
                 'tariff_code' => $code,
                 'tariff_name' => (string) ($tariff['tariff_name'] ?? ''),
-                'tariff_description' => (string) ($tariff['tariff_description'] ?? ''),
+                'tariff_description' => (string) (
+                    $tariff['tariff_description'] ?? ''
+                ),
                 'delivery_mode' => (int) ($tariff['delivery_mode'] ?? 0),
                 'delivery_sum' => (float) ($tariff['delivery_sum'] ?? 0),
                 'period_min' => (int) ($tariff['period_min'] ?? 0),
@@ -144,5 +111,80 @@ class CdekCalculatorService
         }
 
         return array_values($uniqueTariffs);
+    }
+
+    /**
+     * Проверяет корректность направлений доставки.
+     *
+     * Код города обязателен независимо от выбранного способа доставки.
+     * ПВЗ может использоваться одновременно с кодом города.
+     */
+    private function validateLocations(
+        array $fromLocation,
+        array $toLocation,
+        ?string $shipmentPoint,
+        ?string $deliveryPoint,
+    ): void {
+        if (empty($fromLocation['code'])) {
+            throw new InvalidArgumentException(
+                'Необходимо указать город отправления.',
+            );
+        }
+
+        if (empty($toLocation['code'])) {
+            throw new InvalidArgumentException(
+                'Необходимо указать город получения.',
+            );
+        }
+
+        if (
+            $shipmentPoint !== null &&
+            trim($shipmentPoint) === ''
+        ) {
+            throw new InvalidArgumentException(
+                'Некорректно указан пункт отправления СДЭК.',
+            );
+        }
+
+        if (
+            $deliveryPoint !== null &&
+            trim($deliveryPoint) === ''
+        ) {
+            throw new InvalidArgumentException(
+                'Некорректно указан пункт получения СДЭК.',
+            );
+        }
+    }
+
+    /**
+     * Проверяет параметры упаковки.
+     *
+     * @param array<int, array{
+     *     weight: int,
+     *     length: int,
+     *     width: int,
+     *     height: int
+     * }> $packages
+     */
+    private function validatePackages(array $packages): void
+    {
+        if ($packages === []) {
+            throw new InvalidArgumentException(
+                'Необходимо указать хотя бы одну посылку.',
+            );
+        }
+
+        foreach ($packages as $package) {
+            foreach (['weight', 'length', 'width', 'height'] as $field) {
+                if (
+                    !isset($package[$field]) ||
+                    (int) $package[$field] < 1
+                ) {
+                    throw new InvalidArgumentException(
+                        'Некорректные параметры упаковки.',
+                    );
+                }
+            }
+        }
     }
 }

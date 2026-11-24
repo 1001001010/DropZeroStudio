@@ -8,6 +8,7 @@ use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Admin\Cdek\CdekOfficeImageController;
 use App\Http\Controllers\SkinController;
 use App\Http\Controllers\Admin\{OrderController, OrderPaymentController};
+use App\Http\Controllers\Admin\CdekShipmentController;
 use App\Http\Controllers\ToyController;
 use Illuminate\Support\Facades\Route;
 
@@ -66,6 +67,27 @@ Route::middleware(['auth', 'admin'])
  | Управление заказами
  |--------------------------------------------------------------------------
  */
+
+        Route::post(
+            '/orders/{order}/cdek/sync',
+            [CdekShipmentController::class, 'sync'],
+        )->name('orders.cdek.sync');
+
+        // Управление отправлениями СДЭК.
+        Route::prefix('cdek/shipments')
+            ->name('cdek.shipments.')
+            ->controller(CdekShipmentController::class)
+            ->group(function () {
+            // Создание отправления.
+            Route::post('/{order}', 'store')->name('store');
+
+            // Синхронизация состояния отправления.
+            Route::post('/{order}/sync', 'sync')->name('sync');
+
+            // Отмена отправления.
+            Route::delete('/{order}', 'destroy')->name('destroy');
+        });
+
         Route::controller(OrderController::class)
             ->prefix('orders')
             ->name('orders.')

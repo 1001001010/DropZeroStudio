@@ -5,7 +5,6 @@ import { MapPin, UserRound } from 'lucide-react'
 import { DeliveryCityField } from './delivery-city-field'
 import { DeliveryPickupPointField } from './delivery-pickup-point-field'
 
-import type { CdekPickupPoint } from '@/types'
 import type {
     CdekCity,
     DeliveryLocationFormProps,
@@ -57,10 +56,10 @@ export function DeliveryLocationForm({
      *
      * При изменении города сбрасываем ранее выбранный ПВЗ.
      */
-    function handleCityChange(city: CdekCity | null, query: string) {
-        onChange('city', city?.city ?? query)
+    const handleCityChange = (city: CdekCity | null, query: string) => {
+        onChange('city', query)
         onChange('cityCode', city?.code ?? null)
-        onChange('pickupPoint', '')
+        onChange('pickupPoint', null)
     }
 
     return (
@@ -134,9 +133,9 @@ export function DeliveryLocationForm({
             {form.deliveryType === 'pvz' && (
                 <DeliveryPickupPointField
                     cityCode={form.cityCode}
-                    value={form.pickupPoint}
-                    onChange={(point: CdekPickupPoint | null) => {
-                        onChange('pickupPoint', point?.code ?? '')
+                    value={form.pickupPoint?.code ?? ''}
+                    onChange={(point) => {
+                        onChange('pickupPoint', point)
                     }}
                 />
             )}
