@@ -19,6 +19,9 @@ import {
     Bar,
     BarChart,
     CartesianGrid,
+    Cell,
+    Pie,
+    PieChart,
     XAxis,
     YAxis,
 } from 'recharts'
@@ -43,56 +46,91 @@ import {
 import { Separator } from '@/components/ui/separator'
 import MainLayout from '@/layouts/MainLayout'
 
+/**
+ * Единая монохромная палитра аналитики.
+ * Оттенки серого используются для визуального разделения данных,
+ * без дополнительных цветных акцентов.
+ */
+const chartColors = {
+    white: '#FFFFFF',
+    light: '#D4D4D4',
+    medium: '#A3A3A3',
+    muted: '#737373',
+    dark: '#525252',
+    darker: '#404040',
+}
+
 const revenueChartConfig = {
     revenue: {
         label: 'Выручка',
-        color: '#AA141E',
+        color: chartColors.white,
     },
 } satisfies ChartConfig
 
-const dropsChartConfig = {
+const dropsRevenueChartConfig = {
     revenue: {
         label: 'Выручка',
-        color: '#AA141E',
+        color: chartColors.white,
+    },
+} satisfies ChartConfig
+
+const dropsSoldChartConfig = {
+    sold: {
+        label: 'Продано',
+        color: chartColors.white,
     },
 } satisfies ChartConfig
 
 const statusChartConfig = {
     count: {
         label: 'Заказы',
-        color: '#AA141E',
+        color: chartColors.white,
     },
 } satisfies ChartConfig
 
-const orderStatuses: Record<
-    string,
-    { label: string; className: string }
-> = {
+const toysChartConfig = {
+    activated: {
+        label: 'Активировано',
+        color: chartColors.white,
+    },
+    notActivated: {
+        label: 'Не активировано',
+        color: chartColors.dark,
+    },
+} satisfies ChartConfig
+
+const ordersChartConfig = {
+    total: {
+        label: 'Сумма заказа',
+        color: chartColors.white,
+    },
+} satisfies ChartConfig
+
+const orderStatuses: Record<string, { label: string }> = {
     pending: {
         label: 'Ожидает оплаты',
-        className: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-500',
     },
     accepted: {
         label: 'Принят',
-        className: 'border-blue-500/20 bg-blue-500/10 text-blue-500',
     },
     processing: {
         label: 'В обработке',
-        className: 'border-purple-500/20 bg-purple-500/10 text-purple-500',
     },
     shipped: {
         label: 'Отправлен',
-        className: 'border-sky-500/20 bg-sky-500/10 text-sky-500',
     },
     completed: {
         label: 'Завершён',
-        className: 'border-green-500/20 bg-green-500/10 text-green-500',
     },
     cancelled: {
         label: 'Отменён',
-        className: 'border-red-500/20 bg-red-500/10 text-red-500',
     },
 }
+
+const pieColors = [
+    chartColors.white,
+    chartColors.dark,
+]
 
 function formatCurrency(value: number | string, currency: string) {
     return new Intl.NumberFormat('ru-RU', {
@@ -116,26 +154,70 @@ function formatDate(value: string | null) {
 }
 
 function getStatus(status: string) {
-    return (
-        orderStatuses[status] ?? {
-            label: status,
-            className: 'border-white/10 bg-white/5 text-muted-foreground',
-        }
-    )
+    return orderStatuses[status] ?? {
+        label: status,
+    }
 }
 
+/**
+ * Индикатор изменения показателя.
+ * Используем только белый и серый цвета.
+ */
 function ChangeIndicator({ value }: { value: number }) {
     const positive = value >= 0
     const Icon = positive ? ArrowUpRight : ArrowDownRight
 
     return (
-        <span
-            className={`inline-flex items-center gap-1 text-xs font-medium ${positive ? 'text-emerald-500' : 'text-red-500'
-                }`}
-        >
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-neutral-400">
             <Icon className="size-3.5" />
             {Math.abs(value).toFixed(1)}%
         </span>
+    )
+}
+
+function SectionHeading({
+    title,
+    description,
+}: {
+    title: string
+    description?: string
+}) {
+    return (
+        <div className="space-y-1">
+            <h2 className="text-base font-semibold tracking-tight">
+                {title}
+            </h2>
+
+            {description && (
+                <p className="text-sm text-neutral-500">
+                    {description}
+                </p>
+            )}
+        </div>
+    )
+}
+
+function EmptyState({
+    icon: Icon,
+    title,
+    description,
+}: {
+    icon: React.ElementType
+    title: string
+    description: string
+}) {
+    return (
+        <div className="flex min-h-[220px] flex-col items-center justify-center text-center">
+            <Icon className="mb-3 size-8 text-neutral-600" />
+
+            <p className="text-sm font-medium text-neutral-300">
+                {title}
+            </p>
+
+            <p className="mt-1 max-w-xs text-xs text-neutral-500">
+                {description}
+            </p>
+        </div>
     )
 }
 
@@ -149,7 +231,7 @@ export default function AdminDashboard() {
         metrics,
     } = usePage<AdminDashboardProps>().props
 
-    // Подготавливаем данные графиков.
+    // Подготавливаем данные для графиков.
     const revenueData = sales.map((item) => ({
         ...item,
         revenue: Number(item.value) || 0,
@@ -157,14 +239,15 @@ export default function AdminDashboard() {
 
     const dropsData = topDrops.map((drop) => ({
         ...drop,
+        sold: Number(drop.sold) || 0,
         revenue: Number(drop.revenue) || 0,
     }))
 
-    // Распределение статусов среди последних заказов,
-    // которые переданы контроллером.
+    // Статистика статусов среди переданных последних заказов.
     const statusData = Object.entries(
         recentOrders.reduce<Record<string, number>>((result, order) => {
             result[order.status] = (result[order.status] ?? 0) + 1
+
             return result
         }, {}),
     ).map(([status, count]) => ({
@@ -173,6 +256,25 @@ export default function AdminDashboard() {
         count,
     }))
 
+    // Соотношение активированных и неактивированных фигурок.
+    const toysData = [
+        {
+            name: 'Активировано',
+            value: stats.toys.activated,
+        },
+        {
+            name: 'Не активировано',
+            value: stats.toys.notActivated,
+        },
+    ].filter((item) => item.value > 0)
+
+    // Данные последних заказов для отдельного графика.
+    const ordersData = [...recentOrders]
+        .reverse()
+        .map((order) => ({
+            number: order.number,
+            total: Number(order.total) || 0,
+        }))
 
     const totalRecentOrders = recentOrders.length
 
@@ -182,6 +284,11 @@ export default function AdminDashboard() {
 
     const salesTotal = revenueData.reduce(
         (total, item) => total + item.revenue,
+        0,
+    )
+
+    const totalDropsSold = dropsData.reduce(
+        (total, drop) => total + drop.sold,
         0,
     )
 
@@ -220,24 +327,25 @@ export default function AdminDashboard() {
         <MainLayout>
             <Head title="Обзор" />
 
-            <main className="min-h-screen bg-background">
+            <main className="min-h-screen bg-[#050505] text-white">
                 <AdminNav />
 
                 <div className="space-y-8 p-6 lg:p-8">
-                    {/* Заголовок */}
+
+                    {/* Заголовок страницы */}
                     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm font-medium text-[#AA141E]">
-                                <Sparkles className="size-4" />
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
+                                <Sparkles className="size-3.5" />
                                 DropZeroStudio
                             </div>
 
                             <div>
-                                <h1 className="text-2xl font-semibold tracking-tight">
+                                <h1 className="text-3xl font-semibold tracking-tight">
                                     Обзор
                                 </h1>
 
-                                <p className="mt-1 text-sm text-muted-foreground">
+                                <p className="mt-2 text-sm text-neutral-500">
                                     Аналитика и показатели вашего магазина.
                                 </p>
                             </div>
@@ -245,35 +353,33 @@ export default function AdminDashboard() {
 
                         <Badge
                             variant="outline"
-                            className="w-fit gap-2 border-white/10 bg-white/[0.03] px-3 py-1.5 text-muted-foreground"
+                            className="w-fit gap-2 rounded-full border-white/10 bg-white/[0.03] px-3 py-1.5 text-neutral-400"
                         >
-                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            <span className="size-1.5 rounded-full bg-white" />
                             Панель управления
                         </Badge>
                     </section>
 
                     {/* Основные показатели */}
-                    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         {dashboardStats.map((item) => {
                             const Icon = item.icon
 
                             return (
                                 <Card
                                     key={item.title}
-                                    className="relative overflow-hidden border-white/10 bg-card"
+                                    className="relative overflow-hidden border-white/[0.08] bg-[#0A0A0A] shadow-none"
                                 >
                                     <CardContent className="p-5">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-sm text-neutral-500">
                                                 {item.title}
                                             </p>
 
-                                            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-2">
-                                                <Icon className="size-4 text-[#AA141E]" />
-                                            </div>
+                                            <Icon className="size-4 text-neutral-400" />
                                         </div>
 
-                                        <p className="mt-5 text-2xl font-semibold tracking-tight">
+                                        <p className="mt-6 text-2xl font-semibold tracking-tight">
                                             {item.value}
                                         </p>
 
@@ -282,12 +388,10 @@ export default function AdminDashboard() {
                                                 <ChangeIndicator value={item.change} />
                                             )}
 
-                                            <span className="text-xs text-muted-foreground">
+                                            <span className="text-xs text-neutral-500">
                                                 {item.description}
                                             </span>
                                         </div>
-
-                                        <div className="pointer-events-none absolute -bottom-10 -right-8 size-28 rounded-full bg-[#AA141E]/[0.04] blur-2xl" />
                                     </CardContent>
                                 </Card>
                             )
@@ -295,278 +399,288 @@ export default function AdminDashboard() {
                     </section>
 
                     {/* Статистика фигурок */}
-                    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <Card className="border-white/10">
-                            <CardContent className="flex items-center gap-4 p-5">
-                                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                                    <Package className="size-5 text-[#AA141E]" />
-                                </div>
+                    <section className="space-y-4">
+                        <SectionHeading
+                            title="Коллекция"
+                            description="Состояние выпущенных фигурок и их активация."
+                        />
 
-                                <div>
-                                    <p className="text-2xl font-semibold">
-                                        {formatNumber(stats.toys.total)}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Всего фигурок
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                                <CardContent className="flex items-center gap-4 p-5">
+                                    <Package className="size-5 text-neutral-400" />
 
-                        <Card className="border-white/10">
-                            <CardContent className="flex items-center gap-4 p-5">
-                                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                                    <Box className="size-5 text-emerald-500" />
-                                </div>
+                                    <div>
+                                        <p className="text-2xl font-semibold">
+                                            {formatNumber(stats.toys.total)}
+                                        </p>
+                                        <p className="text-xs text-neutral-500">
+                                            Всего фигурок
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                                <div>
-                                    <p className="text-2xl font-semibold">
-                                        {formatNumber(stats.toys.activated)}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Активировано
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                            <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                                <CardContent className="flex items-center gap-4 p-5">
+                                    <Box className="size-5 text-neutral-300" />
 
-                        <Card className="border-white/10">
-                            <CardContent className="flex items-center gap-4 p-5">
-                                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                                    <Clock3 className="size-5 text-yellow-500" />
-                                </div>
+                                    <div>
+                                        <p className="text-2xl font-semibold">
+                                            {formatNumber(stats.toys.activated)}
+                                        </p>
+                                        <p className="text-xs text-neutral-500">
+                                            Активировано
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                                <div>
-                                    <p className="text-2xl font-semibold">
-                                        {formatNumber(stats.toys.notActivated)}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Не активировано
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                            <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                                <CardContent className="flex items-center gap-4 p-5">
+                                    <Clock3 className="size-5 text-neutral-500" />
 
-                        <Card className="border-white/10">
-                            <CardContent className="flex items-center gap-4 p-5">
-                                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                                    <Activity className="size-5 text-[#AA141E]" />
-                                </div>
+                                    <div>
+                                        <p className="text-2xl font-semibold">
+                                            {formatNumber(stats.toys.notActivated)}
+                                        </p>
+                                        <p className="text-xs text-neutral-500">
+                                            Не активировано
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                                <div>
-                                    <p className="text-2xl font-semibold">
-                                        {metrics.activationRate}%
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Уровень активации
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                            <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                                <CardContent className="flex items-center gap-4 p-5">
+                                    <Activity className="size-5 text-neutral-300" />
+
+                                    <div>
+                                        <p className="text-2xl font-semibold">
+                                            {metrics.activationRate}%
+                                        </p>
+                                        <p className="text-xs text-neutral-500">
+                                            Уровень активации
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </section>
 
-                    {/* График выручки и финансовые показатели */}
-                    <section className="grid gap-4 xl:grid-cols-3">
-                        <Card className="border-white/10 xl:col-span-2">
+                    {/* Выручка */}
+                    <section className="grid gap-3 xl:grid-cols-3">
+                        <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none xl:col-span-2">
                             <CardHeader>
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div>
-                                        <CardTitle className="text-base">
+                                        <CardTitle className="text-base font-semibold">
                                             Динамика выручки
                                         </CardTitle>
 
-                                        <CardDescription className="mt-1">
+                                        <CardDescription className="mt-1 text-neutral-500">
                                             Оплаченные заказы за последние 7 дней
                                         </CardDescription>
                                     </div>
 
                                     <Badge
                                         variant="outline"
-                                        className="border-[#AA141E]/30 bg-[#AA141E]/10 text-[#d45b62]"
+                                        className="border-white/10 bg-white/[0.03] text-neutral-400"
                                     >
                                         7 дней
                                     </Badge>
                                 </div>
 
-                                <div className="pt-3">
+                                <div className="pt-4">
                                     <p className="text-3xl font-semibold tracking-tight">
                                         {formatCurrency(salesTotal, currency)}
                                     </p>
-                                    <p className="mt-1 text-xs text-muted-foreground">
-                                        Суммарная выручка за отображаемый период
+
+                                    <p className="mt-1 text-xs text-neutral-500">
+                                        Выручка за отображаемый период
                                     </p>
                                 </div>
                             </CardHeader>
 
                             <CardContent>
-                                <ChartContainer
-                                    config={revenueChartConfig}
-                                    className="h-[260px] w-full"
-                                >
-                                    <AreaChart
-                                        data={revenueData}
-                                        margin={{
-                                            left: 8,
-                                            right: 8,
-                                            top: 12,
-                                            bottom: 0,
-                                        }}
+                                {revenueData.length > 0 ? (
+                                    <ChartContainer
+                                        config={revenueChartConfig}
+                                        className="h-[280px] w-full"
                                     >
-                                        <defs>
-                                            <linearGradient
-                                                id="revenueGradient"
-                                                x1="0"
-                                                y1="0"
-                                                x2="0"
-                                                y2="1"
-                                            >
-                                                <stop
-                                                    offset="0%"
-                                                    stopColor="#AA141E"
-                                                    stopOpacity={0.35}
-                                                />
-                                                <stop
-                                                    offset="95%"
-                                                    stopColor="#AA141E"
-                                                    stopOpacity={0}
-                                                />
-                                            </linearGradient>
-                                        </defs>
-
-                                        <CartesianGrid
-                                            vertical={false}
-                                            stroke="currentColor"
-                                            strokeOpacity={0.08}
-                                        />
-
-                                        <XAxis
-                                            dataKey="day"
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tickMargin={10}
-                                            fontSize={12}
-                                            stroke="currentColor"
-                                            opacity={0.55}
-                                        />
-
-                                        <YAxis
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tickMargin={8}
-                                            fontSize={11}
-                                            stroke="currentColor"
-                                            opacity={0.55}
-                                            tickFormatter={(value) =>
-                                                new Intl.NumberFormat('ru-RU', {
-                                                    notation: 'compact',
-                                                }).format(value)
-                                            }
-                                        />
-
-                                        <ChartTooltip
-                                            cursor={false}
-                                            content={
-                                                <ChartTooltipContent
-                                                    formatter={(value: number | string) =>
-                                                        formatCurrency(Number(value), currency)
-                                                    }
-                                                />
-                                            }
-                                        />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="revenue"
-                                            stroke="#AA141E"
-                                            strokeWidth={2.5}
-                                            fill="url(#revenueGradient)"
-                                            dot={false}
-                                            activeDot={{
-                                                r: 5,
-                                                fill: '#AA141E',
-                                                stroke: 'var(--background)',
-                                                strokeWidth: 2,
+                                        <AreaChart
+                                            data={revenueData}
+                                            margin={{
+                                                left: 8,
+                                                right: 8,
+                                                top: 12,
+                                                bottom: 0,
                                             }}
-                                        />
-                                    </AreaChart>
-                                </ChartContainer>
+                                        >
+                                            <defs>
+                                                <linearGradient
+                                                    id="revenueGradient"
+                                                    x1="0"
+                                                    y1="0"
+                                                    x2="0"
+                                                    y2="1"
+                                                >
+                                                    <stop
+                                                        offset="0%"
+                                                        stopColor="#FFFFFF"
+                                                        stopOpacity={0.25}
+                                                    />
+                                                    <stop
+                                                        offset="100%"
+                                                        stopColor="#FFFFFF"
+                                                        stopOpacity={0}
+                                                    />
+                                                </linearGradient>
+                                            </defs>
 
-                                {revenueData.every((item) => item.revenue === 0) && (
-                                    <p className="mt-3 text-center text-xs text-muted-foreground">
-                                        За этот период продаж пока нет.
-                                    </p>
+                                            <CartesianGrid
+                                                vertical={false}
+                                                stroke="#FFFFFF"
+                                                strokeOpacity={0.07}
+                                            />
+
+                                            <XAxis
+                                                dataKey="day"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tickMargin={10}
+                                                fontSize={11}
+                                                stroke="#737373"
+                                            />
+
+                                            <YAxis
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tickMargin={8}
+                                                fontSize={11}
+                                                stroke="#737373"
+                                                tickFormatter={(value) =>
+                                                    new Intl.NumberFormat('ru-RU', {
+                                                        notation: 'compact',
+                                                    }).format(value)
+                                                }
+                                            />
+
+                                            <ChartTooltip
+                                                cursor={false}
+                                                content={
+                                                    <ChartTooltipContent
+                                                        formatter={(value) =>
+                                                            formatCurrency(
+                                                                Number(
+                                                                    Array.isArray(value)
+                                                                        ? value[0]
+                                                                        : value,
+                                                                ),
+                                                                currency,
+                                                            )
+                                                        }
+                                                    />
+                                                }
+                                            />
+
+                                            <Area
+                                                type="monotone"
+                                                dataKey="revenue"
+                                                stroke="#FFFFFF"
+                                                strokeWidth={2}
+                                                fill="url(#revenueGradient)"
+                                                dot={false}
+                                                activeDot={{
+                                                    r: 5,
+                                                    fill: '#FFFFFF',
+                                                    stroke: '#050505',
+                                                    strokeWidth: 2,
+                                                }}
+                                            />
+                                        </AreaChart>
+                                    </ChartContainer>
+                                ) : (
+                                    <EmptyState
+                                        icon={ChartNoAxesCombined}
+                                        title="Нет данных о выручке"
+                                        description="График появится после первых оплаченных заказов."
+                                    />
                                 )}
                             </CardContent>
                         </Card>
 
-                        <Card className="border-white/10">
+                        {/* Финансовая сводка */}
+                        <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
                             <CardHeader>
                                 <CardTitle className="text-base">
                                     Финансовые показатели
                                 </CardTitle>
-                                <CardDescription>
-                                    Сводная информация по магазину
+
+                                <CardDescription className="text-neutral-500">
+                                    Сводная информация магазина
                                 </CardDescription>
                             </CardHeader>
 
                             <CardContent className="space-y-5">
                                 <div>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-xs text-neutral-500">
                                         Средний чек
                                     </p>
-                                    <p className="mt-1 text-2xl font-semibold">
-                                        {formatCurrency(
-                                            metrics.averageOrder,
-                                            currency,
-                                        )}
+
+                                    <p className="mt-2 text-2xl font-semibold">
+                                        {formatCurrency(metrics.averageOrder, currency)}
                                     </p>
                                 </div>
 
-                                <Separator className="bg-white/10" />
+                                <Separator className="bg-white/[0.08]" />
 
                                 <div>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-xs text-neutral-500">
                                         Выручка за месяц
                                     </p>
-                                    <p className="mt-1 text-xl font-semibold">
-                                        {formatCurrency(
-                                            stats.revenue.month,
-                                            currency,
-                                        )}
+
+                                    <p className="mt-2 text-xl font-semibold">
+                                        {formatCurrency(stats.revenue.month, currency)}
                                     </p>
+
                                     <div className="mt-2">
                                         <ChangeIndicator value={stats.revenue.change} />
                                     </div>
                                 </div>
 
-                                <Separator className="bg-white/10" />
+                                <Separator className="bg-white/[0.08]" />
 
                                 <div>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-xs text-neutral-500">
                                         Всего заказов
                                     </p>
-                                    <p className="mt-1 text-xl font-semibold">
+
+                                    <p className="mt-2 text-xl font-semibold">
                                         {formatNumber(stats.orders.total)}
                                     </p>
-                                    <p className="mt-1 text-xs text-muted-foreground">
+
+                                    <p className="mt-1 text-xs text-neutral-500">
                                         {formatNumber(stats.orders.month)} за текущий месяц
                                     </p>
                                 </div>
 
-                                <Separator className="bg-white/10" />
+                                <Separator className="bg-white/[0.08]" />
 
                                 <div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="text-sm text-muted-foreground">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs text-neutral-500">
                                             Активация фигурок
                                         </p>
+
                                         <span className="text-sm font-semibold">
                                             {metrics.activationRate}%
                                         </span>
                                     </div>
 
-                                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+                                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
                                         <div
-                                            className="h-full rounded-full bg-[#AA141E] transition-all"
+                                            className="h-full rounded-full bg-white transition-all"
                                             style={{
                                                 width: `${Math.min(
                                                     Math.max(metrics.activationRate, 0),
@@ -580,24 +694,32 @@ export default function AdminDashboard() {
                         </Card>
                     </section>
 
-                    {/* Популярные дропы и статусы заказов */}
-                    <section className="grid gap-4 xl:grid-cols-2">
-                        <Card className="border-white/10">
-                            <CardHeader>
-                                <CardTitle className="text-base">
-                                    Популярные дропы
-                                </CardTitle>
-                                <CardDescription>
-                                    Топ-5 по выручке
-                                </CardDescription>
-                            </CardHeader>
+                    {/* Аналитика дропов */}
+                    <section className="space-y-4">
+                        <SectionHeading
+                            title="Аналитика дропов"
+                            description="Сравнение продаж и выручки по коллекциям."
+                        />
 
-                            <CardContent>
-                                {dropsData.length > 0 ? (
-                                    <div className="space-y-5">
+                        <div className="grid gap-3 xl:grid-cols-2">
+
+                            {/* Выручка по дропам */}
+                            <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                                <CardHeader>
+                                    <CardTitle className="text-base">
+                                        Выручка по дропам
+                                    </CardTitle>
+
+                                    <CardDescription className="text-neutral-500">
+                                        Топ-5 коллекций по выручке
+                                    </CardDescription>
+                                </CardHeader>
+
+                                <CardContent>
+                                    {dropsData.length > 0 ? (
                                         <ChartContainer
-                                            config={dropsChartConfig}
-                                            className="h-[220px] w-full"
+                                            config={dropsRevenueChartConfig}
+                                            className="h-[280px] w-full"
                                         >
                                             <BarChart
                                                 data={dropsData}
@@ -611,8 +733,8 @@ export default function AdminDashboard() {
                                             >
                                                 <CartesianGrid
                                                     horizontal={false}
-                                                    stroke="currentColor"
-                                                    strokeOpacity={0.08}
+                                                    stroke="#FFFFFF"
+                                                    strokeOpacity={0.07}
                                                 />
 
                                                 <XAxis
@@ -627,90 +749,70 @@ export default function AdminDashboard() {
                                                     tickLine={false}
                                                     width={110}
                                                     fontSize={11}
-                                                    stroke="currentColor"
-                                                    tick={{ fill: 'currentColor' }}
+                                                    stroke="#737373"
                                                     tickFormatter={(value) =>
                                                         String(value).length > 17
                                                             ? `${String(value).slice(0, 17)}…`
-                                                            : value
+                                                            : String(value)
                                                     }
                                                 />
 
                                                 <ChartTooltip
                                                     cursor={false}
-                                                    content={<ChartTooltipContent />}
+                                                    content={
+                                                        <ChartTooltipContent
+                                                            formatter={(value) =>
+                                                                formatCurrency(
+                                                                    Number(
+                                                                        Array.isArray(value)
+                                                                            ? value[0]
+                                                                            : value,
+                                                                    ),
+                                                                    currency,
+                                                                )
+                                                            }
+                                                        />
+                                                    }
                                                 />
 
                                                 <Bar
                                                     dataKey="revenue"
-                                                    fill="#AA141E"
-                                                    radius={[0, 5, 5, 0]}
-                                                    barSize={22}
+                                                    fill="#FFFFFF"
+                                                    radius={[0, 4, 4, 0]}
+                                                    barSize={24}
                                                 />
                                             </BarChart>
                                         </ChartContainer>
+                                    ) : (
+                                        <EmptyState
+                                            icon={Box}
+                                            title="Пока нет продаж"
+                                            description="Здесь появится сравнение выручки по дропам."
+                                        />
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                                        <Separator className="bg-white/10" />
+                            {/* Количество продаж по дропам */}
+                            <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                                <CardHeader>
+                                    <CardTitle className="text-base">
+                                        Продажи по дропам
+                                    </CardTitle>
 
-                                        {dropsData.map((drop, index) => (
-                                            <div
-                                                key={`${drop.name}-${index}`}
-                                                className="flex items-center justify-between gap-3"
-                                            >
-                                                <div className="flex min-w-0 items-center gap-3">
-                                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-xs text-muted-foreground">
-                                                        {index + 1}
-                                                    </span>
+                                    <CardDescription className="text-neutral-500">
+                                        Количество проданных фигурок
+                                    </CardDescription>
+                                </CardHeader>
 
-                                                    <div className="min-w-0">
-                                                        <p className="truncate text-sm font-medium">
-                                                            {drop.name}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Продано: {formatNumber(drop.sold)}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <span className="shrink-0 text-sm font-semibold">
-                                                    {formatCurrency(drop.revenue, currency)}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="flex min-h-[200px] flex-col items-center justify-center text-center">
-                                        <Box className="mb-3 size-8 text-muted-foreground" />
-                                        <p className="text-sm font-medium">
-                                            Пока нет продаж
-                                        </p>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            Здесь появятся самые популярные дропы.
-                                        </p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-white/10">
-                            <CardHeader>
-                                <CardTitle className="text-base">
-                                    Статусы заказов
-                                </CardTitle>
-                                <CardDescription>
-                                    Распределение последних {totalRecentOrders} заказов
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent>
-                                {statusData.length > 0 ? (
-                                    <div className="space-y-5">
+                                <CardContent>
+                                    {dropsData.length > 0 ? (
                                         <ChartContainer
-                                            config={statusChartConfig}
-                                            className="h-[220px] w-full"
+                                            config={dropsSoldChartConfig}
+                                            className="h-[280px] w-full"
                                         >
                                             <BarChart
-                                                data={statusData}
+                                                data={dropsData}
                                                 margin={{
                                                     left: -18,
                                                     right: 8,
@@ -720,8 +822,8 @@ export default function AdminDashboard() {
                                             >
                                                 <CartesianGrid
                                                     vertical={false}
-                                                    stroke="currentColor"
-                                                    strokeOpacity={0.08}
+                                                    stroke="#FFFFFF"
+                                                    strokeOpacity={0.07}
                                                 />
 
                                                 <XAxis
@@ -730,11 +832,11 @@ export default function AdminDashboard() {
                                                     tickLine={false}
                                                     tickMargin={10}
                                                     fontSize={10}
-                                                    stroke="currentColor"
+                                                    stroke="#737373"
                                                     tickFormatter={(value) =>
-                                                        String(value).length > 11
-                                                            ? `${String(value).slice(0, 11)}…`
-                                                            : value
+                                                        String(value).length > 10
+                                                            ? `${String(value).slice(0, 10)}…`
+                                                            : String(value)
                                                     }
                                                 />
 
@@ -743,53 +845,398 @@ export default function AdminDashboard() {
                                                     axisLine={false}
                                                     tickLine={false}
                                                     fontSize={11}
-                                                    stroke="currentColor"
+                                                    stroke="#737373"
                                                 />
 
                                                 <ChartTooltip
                                                     cursor={false}
-                                                    content={
-                                                        <ChartTooltipContent />
-                                                    }
+                                                    content={<ChartTooltipContent />}
                                                 />
 
                                                 <Bar
-                                                    dataKey="count"
-                                                    fill="#AA141E"
-                                                    radius={[5, 5, 0, 0]}
-                                                    barSize={30}
+                                                    dataKey="sold"
+                                                    fill="#FFFFFF"
+                                                    radius={[4, 4, 0, 0]}
+                                                    barSize={32}
                                                 />
                                             </BarChart>
                                         </ChartContainer>
+                                    ) : (
+                                        <EmptyState
+                                            icon={Package}
+                                            title="Нет данных о продажах"
+                                            description="Количество продаж появится после оформления заказов."
+                                        />
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                                        <Separator className="bg-white/10" />
+                        {/* Таблица популярных дропов */}
+                        <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                            <CardHeader>
+                                <CardTitle className="text-base">
+                                    Рейтинг коллекций
+                                </CardTitle>
 
-                                        <div className="space-y-3">
-                                            {statusData.map((item) => (
+                                <CardDescription className="text-neutral-500">
+                                    Сводная статистика по популярным дропам
+                                </CardDescription>
+                            </CardHeader>
+
+                            <CardContent>
+                                {dropsData.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {dropsData.map((drop, index) => {
+                                            const maxSold = Math.max(
+                                                ...dropsData.map((item) => item.sold),
+                                                1,
+                                            )
+
+                                            return (
                                                 <div
-                                                    key={item.status}
-                                                    className="flex items-center justify-between gap-3"
+                                                    key={`${drop.name}-${index}`}
+                                                    className="space-y-2"
                                                 >
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {item.name}
-                                                    </span>
-                                                    <span className="text-sm font-semibold">
-                                                        {item.count}
-                                                    </span>
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <div className="flex min-w-0 items-center gap-3">
+                                                            <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-white/10 text-xs text-neutral-400">
+                                                                {index + 1}
+                                                            </span>
+
+                                                            <div className="min-w-0">
+                                                                <p className="truncate text-sm font-medium">
+                                                                    {drop.name}
+                                                                </p>
+
+                                                                <p className="text-xs text-neutral-500">
+                                                                    Продано: {formatNumber(drop.sold)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <p className="shrink-0 text-sm font-semibold">
+                                                            {formatCurrency(drop.revenue, currency)}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="h-1 overflow-hidden rounded-full bg-white/[0.07]">
+                                                        <div
+                                                            className="h-full rounded-full bg-white"
+                                                            style={{
+                                                                width: `${(drop.sold / maxSold) * 100}%`,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 </div>
-                                            ))}
-                                        </div>
+                                            )
+                                        })}
                                     </div>
                                 ) : (
-                                    <div className="flex min-h-[200px] flex-col items-center justify-center text-center">
-                                        <ShoppingBag className="mb-3 size-8 text-muted-foreground" />
-                                        <p className="text-sm font-medium">
-                                            Нет данных о заказах
-                                        </p>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            Статистика появится после оформления заказов.
-                                        </p>
-                                    </div>
+                                    <EmptyState
+                                        icon={Package}
+                                        title="Нет данных"
+                                        description="Рейтинг появится после первых продаж."
+                                    />
+                                )}
+                            </CardContent>
+                        </Card>
+                    </section>
+
+                    {/* Статистика фигурок и заказов */}
+                    <section className="space-y-4">
+                        <SectionHeading
+                            title="Распределение"
+                            description="Состав коллекции и состояние заказов."
+                        />
+
+                        <div className="grid gap-3 xl:grid-cols-2">
+
+                            {/* Активация фигурок */}
+                            <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                                <CardHeader>
+                                    <CardTitle className="text-base">
+                                        Активация фигурок
+                                    </CardTitle>
+
+                                    <CardDescription className="text-neutral-500">
+                                        Доля активированных фигурок от общего количества
+                                    </CardDescription>
+                                </CardHeader>
+
+                                <CardContent>
+                                    {toysData.length > 0 ? (
+                                        <div className="grid items-center gap-4 sm:grid-cols-2">
+                                            <ChartContainer
+                                                config={toysChartConfig}
+                                                className="mx-auto h-[220px] w-full max-w-[260px]"
+                                            >
+                                                <PieChart>
+                                                    <ChartTooltip
+                                                        content={<ChartTooltipContent />}
+                                                    />
+
+                                                    <Pie
+                                                        data={toysData}
+                                                        dataKey="value"
+                                                        nameKey="name"
+                                                        innerRadius={62}
+                                                        outerRadius={88}
+                                                        paddingAngle={3}
+                                                        stroke="none"
+                                                    >
+                                                        {toysData.map((item, index) => (
+                                                            <Cell
+                                                                key={item.name}
+                                                                fill={pieColors[index]}
+                                                            />
+                                                        ))}
+                                                    </Pie>
+                                                </PieChart>
+                                            </ChartContainer>
+
+                                            <div className="space-y-5">
+                                                {toysData.map((item, index) => (
+                                                    <div
+                                                        key={item.name}
+                                                        className="flex items-center justify-between gap-3"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <span
+                                                                className="size-2.5 rounded-sm"
+                                                                style={{
+                                                                    backgroundColor: pieColors[index],
+                                                                }}
+                                                            />
+
+                                                            <span className="text-sm text-neutral-400">
+                                                                {item.name}
+                                                            </span>
+                                                        </div>
+
+                                                        <span className="text-sm font-semibold">
+                                                            {formatNumber(item.value)}
+                                                        </span>
+                                                    </div>
+                                                ))}
+
+                                                <Separator className="bg-white/[0.08]" />
+
+                                                <div>
+                                                    <p className="text-xs text-neutral-500">
+                                                        Всего фигурок
+                                                    </p>
+
+                                                    <p className="mt-1 text-2xl font-semibold">
+                                                        {formatNumber(stats.toys.total)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <EmptyState
+                                            icon={Box}
+                                            title="Нет фигурок"
+                                            description="Статистика активации появится после добавления фигурок."
+                                        />
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Статусы заказов */}
+                            <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                                <CardHeader>
+                                    <CardTitle className="text-base">
+                                        Статусы заказов
+                                    </CardTitle>
+
+                                    <CardDescription className="text-neutral-500">
+                                        Распределение последних {totalRecentOrders} заказов
+                                    </CardDescription>
+                                </CardHeader>
+
+                                <CardContent>
+                                    {statusData.length > 0 ? (
+                                        <div className="space-y-5">
+                                            <ChartContainer
+                                                config={statusChartConfig}
+                                                className="h-[220px] w-full"
+                                            >
+                                                <BarChart
+                                                    data={statusData}
+                                                    margin={{
+                                                        left: -18,
+                                                        right: 8,
+                                                        top: 12,
+                                                        bottom: 0,
+                                                    }}
+                                                >
+                                                    <CartesianGrid
+                                                        vertical={false}
+                                                        stroke="#FFFFFF"
+                                                        strokeOpacity={0.07}
+                                                    />
+
+                                                    <XAxis
+                                                        dataKey="name"
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tickMargin={10}
+                                                        fontSize={10}
+                                                        stroke="#737373"
+                                                        tickFormatter={(value) =>
+                                                            String(value).length > 11
+                                                                ? `${String(value).slice(0, 11)}…`
+                                                                : String(value)
+                                                        }
+                                                    />
+
+                                                    <YAxis
+                                                        allowDecimals={false}
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        fontSize={11}
+                                                        stroke="#737373"
+                                                    />
+
+                                                    <ChartTooltip
+                                                        cursor={false}
+                                                        content={<ChartTooltipContent />}
+                                                    />
+
+                                                    <Bar
+                                                        dataKey="count"
+                                                        fill="#FFFFFF"
+                                                        radius={[4, 4, 0, 0]}
+                                                        barSize={30}
+                                                    />
+                                                </BarChart>
+                                            </ChartContainer>
+
+                                            <Separator className="bg-white/[0.08]" />
+
+                                            <div className="space-y-3">
+                                                {statusData.map((item) => (
+                                                    <div
+                                                        key={item.status}
+                                                        className="flex items-center justify-between gap-3"
+                                                    >
+                                                        <span className="text-sm text-neutral-400">
+                                                            {item.name}
+                                                        </span>
+
+                                                        <span className="text-sm font-semibold">
+                                                            {item.count}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <EmptyState
+                                            icon={ShoppingBag}
+                                            title="Нет заказов"
+                                            description="Статистика появится после оформления заказов."
+                                        />
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </section>
+
+                    {/* Суммы последних заказов */}
+                    <section>
+                        <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                            <CardHeader>
+                                <CardTitle className="text-base">
+                                    Суммы последних заказов
+                                </CardTitle>
+
+                                <CardDescription className="text-neutral-500">
+                                    Сравнение стоимости последних {ordersData.length} заказов
+                                </CardDescription>
+                            </CardHeader>
+
+                            <CardContent>
+                                {ordersData.length > 0 ? (
+                                    <ChartContainer
+                                        config={ordersChartConfig}
+                                        className="h-[260px] w-full"
+                                    >
+                                        <BarChart
+                                            data={ordersData}
+                                            margin={{
+                                                left: 8,
+                                                right: 8,
+                                                top: 12,
+                                                bottom: 0,
+                                            }}
+                                        >
+                                            <CartesianGrid
+                                                vertical={false}
+                                                stroke="#FFFFFF"
+                                                strokeOpacity={0.07}
+                                            />
+
+                                            <XAxis
+                                                dataKey="number"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tickMargin={10}
+                                                fontSize={10}
+                                                stroke="#737373"
+                                                tickFormatter={(value) =>
+                                                    String(value).length > 10
+                                                        ? `${String(value).slice(0, 10)}…`
+                                                        : String(value)
+                                                }
+                                            />
+
+                                            <YAxis
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tickMargin={8}
+                                                fontSize={11}
+                                                stroke="#737373"
+                                                tickFormatter={(value) =>
+                                                    new Intl.NumberFormat('ru-RU', {
+                                                        notation: 'compact',
+                                                    }).format(value)
+                                                }
+                                            />
+
+                                            <ChartTooltip
+                                                cursor={false}
+                                                content={
+                                                    <ChartTooltipContent
+                                                        formatter={(value) =>
+                                                            formatCurrency(
+                                                                Number(
+                                                                    Array.isArray(value)
+                                                                        ? value[0]
+                                                                        : value,
+                                                                ),
+                                                                currency,
+                                                            )
+                                                        }
+                                                    />
+                                                }
+                                            />
+
+                                            <Bar
+                                                dataKey="total"
+                                                fill="#FFFFFF"
+                                                radius={[4, 4, 0, 0]}
+                                                barSize={32}
+                                            />
+                                        </BarChart>
+                                    </ChartContainer>
+                                ) : (
+                                    <EmptyState
+                                        icon={ShoppingBag}
+                                        title="Нет заказов"
+                                        description="График появится после оформления заказов."
+                                    />
                                 )}
                             </CardContent>
                         </Card>
@@ -797,21 +1244,22 @@ export default function AdminDashboard() {
 
                     {/* Последние заказы */}
                     <section>
-                        <Card className="border-white/10">
+                        <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
                             <CardHeader>
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <CardTitle className="text-base">
                                             Последние заказы
                                         </CardTitle>
-                                        <CardDescription className="mt-1">
+
+                                        <CardDescription className="mt-1 text-neutral-500">
                                             Последние операции в магазине
                                         </CardDescription>
                                     </div>
 
                                     <Badge
                                         variant="outline"
-                                        className="border-white/10 bg-white/[0.03]"
+                                        className="border-white/10 bg-white/[0.03] text-neutral-400"
                                     >
                                         {recentOrders.length} заказов
                                     </Badge>
@@ -829,7 +1277,7 @@ export default function AdminDashboard() {
                                                     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                                                         <div className="flex min-w-0 items-start gap-3">
                                                             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03]">
-                                                                <ShoppingBag className="size-4 text-muted-foreground" />
+                                                                <ShoppingBag className="size-4 text-neutral-400" />
                                                             </div>
 
                                                             <div className="min-w-0 space-y-1">
@@ -840,17 +1288,17 @@ export default function AdminDashboard() {
 
                                                                     <Badge
                                                                         variant="outline"
-                                                                        className={status.className}
+                                                                        className="border-white/10 bg-white/[0.03] text-neutral-400"
                                                                     >
                                                                         {status.label}
                                                                     </Badge>
                                                                 </div>
 
-                                                                <p className="truncate text-sm text-muted-foreground">
+                                                                <p className="truncate text-sm text-neutral-400">
                                                                     {order.customer_name}
                                                                 </p>
 
-                                                                <p className="truncate text-xs text-muted-foreground">
+                                                                <p className="truncate text-xs text-neutral-500">
                                                                     {order.items
                                                                         .map(
                                                                             (item) =>
@@ -870,7 +1318,7 @@ export default function AdminDashboard() {
                                                                 )}
                                                             </p>
 
-                                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                            <p className="mt-1 text-xs text-neutral-500">
                                                                 {order.paid_at
                                                                     ? `Оплачен ${formatDate(order.paid_at)}`
                                                                     : `Создан ${formatDate(order.created_at)}`}
@@ -879,65 +1327,83 @@ export default function AdminDashboard() {
                                                     </div>
 
                                                     {index !== recentOrders.length - 1 && (
-                                                        <Separator className="mt-4 bg-white/10" />
+                                                        <Separator className="mt-4 bg-white/[0.08]" />
                                                     )}
                                                 </div>
                                             )
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="flex min-h-[180px] flex-col items-center justify-center text-center">
-                                        <ShoppingBag className="mb-3 size-8 text-muted-foreground" />
-                                        <p className="text-sm font-medium">
-                                            Заказов пока нет
-                                        </p>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            Здесь будут отображаться последние заказы.
-                                        </p>
-                                    </div>
+                                    <EmptyState
+                                        icon={ShoppingBag}
+                                        title="Заказов пока нет"
+                                        description="Здесь будут отображаться последние заказы."
+                                    />
                                 )}
                             </CardContent>
                         </Card>
                     </section>
 
-                    {/* Нижняя сводка */}
-                    <section className="grid gap-4 sm:grid-cols-3">
-                        <Card className="border-white/10 bg-white/[0.015]">
+                    {/* Итоговая сводка */}
+                    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
                             <CardContent className="p-5">
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-neutral-500">
                                     Оплачено среди последних заказов
                                 </p>
+
                                 <p className="mt-2 text-2xl font-semibold">
                                     {formatNumber(paidRecentOrders)}
-                                    <span className="ml-2 text-sm font-normal text-muted-foreground">
+
+                                    <span className="ml-2 text-sm font-normal text-neutral-500">
                                         / {formatNumber(totalRecentOrders)}
                                     </span>
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-white/10 bg-white/[0.015]">
+                        <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
                             <CardContent className="p-5">
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-neutral-500">
+                                    Продано фигурок в топ-дропах
+                                </p>
+
+                                <p className="mt-2 text-2xl font-semibold">
+                                    {formatNumber(totalDropsSold)}
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
+                            <CardContent className="p-5">
+                                <p className="text-xs text-neutral-500">
                                     Средний чек
                                 </p>
+
                                 <p className="mt-2 text-2xl font-semibold">
                                     {formatCurrency(metrics.averageOrder, currency)}
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-white/10 bg-white/[0.015]">
+                        <Card className="border-white/[0.08] bg-[#0A0A0A] shadow-none">
                             <CardContent className="p-5">
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-neutral-500">
                                     Пользователей зарегистрировано
                                 </p>
+
                                 <p className="mt-2 text-2xl font-semibold">
                                     {formatNumber(stats.users.total)}
                                 </p>
                             </CardContent>
                         </Card>
                     </section>
+
+                    <footer className="border-t border-white/[0.08] pt-5">
+                        <p className="text-xs text-neutral-600">
+                            DropZeroStudio · Панель аналитики
+                        </p>
+                    </footer>
                 </div>
             </main>
         </MainLayout>
