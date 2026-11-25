@@ -427,9 +427,16 @@ class CdekShipmentService
     }
 
     /**
-     * Преобразует историю статусов СДЭК в данные нашей системы.
+     * Преобразует историю статусов СДЭК во внутренний статус отправления.
      *
-     * Неизвестные коды не меняют локальный статус отправления.
+     * @param array<string, mixed> $order
+     * @return array{
+     *     status: string|null,
+     *     shipped_at: \Carbon\Carbon|null,
+     *     delivered_at: \Carbon\Carbon|null,
+     *     tracking_number: string|null,
+     *     statuses: array
+     * }
      */
     public function getStatusSummary(array $order): array
     {
@@ -439,80 +446,158 @@ class CdekShipmentService
             $statuses = [];
         }
 
-        // Сортируем события по времени, чтобы определить последнее состояние.
-        usort(
-            $statuses,
-            static fn(array $a, array $b): int =>
-                strtotime($a['date_time'] ?? '') <=> strtotime($b['date_time'] ?? ''),
-        );
+        // Сортируем события по времени от старых к новым.
+        usort($statuses, function (array $first, array $second): int {
+            $firstDate = strtotime($first['date_time'] ?? '') ?: 0;
+            $secondDate = strtotime($second['date_time'] ?? '') ?: 0;
 
-        $latestStatus = $statuses !== []
-            ? $statuses[array_key_last($statuses)]
-            : [];
+            return $firstDate <=> $secondDate;
+        });
 
-        $latestCode = $latestStatus['code'] ?? null;
-
-        $status = match ($latestCode) {
+        /**
+         * Статусы оформления и подготовки отправления.
+         */
+        $preparingStatuses = [
             'CREATED',
             'ACCEPTED',
             'RECEIVED_AT_SHIPMENT_WAREHOUSE',
             'READY_FOR_SHIPMENT_IN_SENDER_CITY',
-            'READY_TO_SHIP_AT_SENDING_OFFICE' => 'preparing',
+            'READY_TO_SHIP_AT_SENDING_OFFICE',
+            'RETURNED_TO_SENDER_WAREHOUSE',
+        ];
 
-            'TAKEN_BY_TRANSPORTER_FROM_SENDER_CITY',
+        /**
+         * Статусы движения отправления.
+         *
+         * Сюда также входят промежуточные склады, таможня,
+         * пункты выдачи и передача курьеру.
+         */
+        $inTransitStatuses = [
             'PASSED_TO_CARRIER_AT_SENDING_OFFICE',
+            'TAKEN_BY_TRANSPORTER_FROM_SENDER_CITY',
+            'SEND_TO_TRANSIT_OFFICE',
             'SENT_TO_TRANSIT_CITY',
+            'MET_AT_TRANSIT_OFFICE',
+            'ACCEPTED_TO_OFFICE_TRANSIT_WAREHOUSE',
             'ACCEPTED_IN_TRANSIT_CITY',
             'ACCEPTED_AT_TRANSIT_WAREHOUSE',
-            'READY_FOR_SHIPMENT_IN_TRANSIT_CITY',
+            'ACCEPTED_AT_TRANSIT_WAREHOUS',
+            'ENTERED_TO_OFFICE_TRANSIT_WAREHOUSE',
+            'READY_TO_SHIP_IN_TRANSIT_OFFICE',
+            'PASSED_TO_CARRIER_AT_TRANSIT_OFFICE',
             'TAKEN_BY_TRANSPORTER_FROM_TRANSIT_CITY',
+            'RETURNED_TO_TRANSIT_WAREHOUSE',
+            'SEND_TO_SENDING_OFFICE',
+            'MET_AT_SENDING_OFFICE',
+            'SEND_TO_RECIPIENT_OFFICE',
             'SENT_TO_RECIPIENT_CITY',
-            'ARRIVED_AT_RECIPIENT_CITY',
+            'MET_AT_RECIPIENT_OFFICE',
             'ACCEPTED_IN_RECIPIENT_CITY',
-            'ACCEPTED_AT_RECIPIENT_CITY_WAREHOUSE',
-            'ACCEPTED_AT_PICK_UP_POINT',
-            'READY_FOR_RECIPIENT_CITY_DELIVERY',
-            'TAKEN_BY_COURIER',
+            'ACCEPTED_AT_DELIVERY_WAREHOUSE',
+            'ACCEPTED_AT_WAREHOUSE_ON_DEMAND',
+            'ENTERED_TO_DELIVERY_WAREHOUSE',
+            'ENTERED_TO_WAREHOUSE_ON_DEMAND',
+            'RETURNED_TO_DELIVERY_WAREHOUSE',
+            'RETURNED_TO_RECIPIENT_CITY_WAREHOUSE',
             'ISSUED_FOR_DELIVERY',
+            'TAKEN_BY_COURIER',
+            'IN_CUSTOMS_INTERNATIONAL',
             'IN_CUSTOMS_LOCAL',
             'CUSTOMS_COMPLETE',
+            'SHIPPED_TO_DESTINATION',
+            'PASSED_TO_TRANSIT_CARRIER',
             'POSTOMAT_POSTED',
-            'POSTOMAT_SEIZED' => 'in_transit',
+            'POSTOMAT_SEIZED',
+            'READY_TO_SHIP_AT_SENDING_OFFICE',
+        ];
 
+        /**
+         * События, означающие фактическую передачу отправления
+         * перевозчику или начало его движения.
+         */
+        $shippedStatuses = [
+            'PASSED_TO_CARRIER_AT_SENDING_OFFICE',
+            'TAKEN_BY_TRANSPORTER_FROM_SENDER_CITY',
+            'SEND_TO_TRANSIT_OFFICE',
+            'SENT_TO_TRANSIT_CITY',
+            'PASSED_TO_CARRIER_AT_TRANSIT_OFFICE',
+            'TAKEN_BY_TRANSPORTER_FROM_TRANSIT_CITY',
+            'SEND_TO_SENDING_OFFICE',
+            'SEND_TO_RECIPIENT_OFFICE',
+            'SENT_TO_RECIPIENT_CITY',
+            'SHIPPED_TO_DESTINATION',
+            'PASSED_TO_TRANSIT_CARRIER',
+        ];
+
+        $deliveredStatuses = [
             'DELIVERED',
-            'POSTOMAT_RECEIVED' => 'delivered',
+            'POSTOMAT_RECEIVED',
+        ];
 
-            'RETURNED' => 'returned',
+        // Определяем последний известный внутренний статус.
+        $status = null;
 
-            default => null,
-        };
+        foreach (array_reverse($statuses) as $event) {
+            $code = $event['code'] ?? null;
 
-        // Фиксируем дату фактической передачи перевозчику.
-        $shippedAt = null;
+            if (!is_string($code)) {
+                continue;
+            }
 
-        foreach ($statuses as $event) {
-            if (
-                in_array($event['code'] ?? null, [
-                    'TAKEN_BY_TRANSPORTER_FROM_SENDER_CITY',
-                    'PASSED_TO_CARRIER_AT_SENDING_OFFICE',
-                ], true)
-            ) {
-                $shippedAt = $event['date_time'] ?? null;
+            if (in_array($code, $deliveredStatuses, true)) {
+                $status = 'delivered';
+                break;
+            }
+
+            if ($code === 'RETURNED') {
+                $status = 'returned';
+                break;
+            }
+
+            if (in_array($code, $inTransitStatuses, true)) {
+                $status = 'in_transit';
+                break;
+            }
+
+            if (in_array($code, $preparingStatuses, true)) {
+                $status = 'preparing';
                 break;
             }
         }
 
-        // Фиксируем дату вручения получателю.
-        $deliveredAt = null;
+        // Определяем дату первой передачи отправления перевозчику.
+        $shippedAt = null;
 
         foreach ($statuses as $event) {
+            $code = $event['code'] ?? null;
+            $dateTime = $event['date_time'] ?? null;
+
             if (
-                in_array($event['code'] ?? null, [
-                    'DELIVERED',
-                    'POSTOMAT_RECEIVED',
-                ], true)
+                is_string($code)
+                && in_array($code, $shippedStatuses, true)
+                && is_string($dateTime)
+                && $dateTime !== ''
             ) {
-                $deliveredAt = $event['date_time'] ?? null;
+                $shippedAt = \Carbon\Carbon::parse($dateTime);
+                break;
+            }
+        }
+
+        // Определяем дату доставки.
+        $deliveredAt = null;
+
+        foreach (array_reverse($statuses) as $event) {
+            $code = $event['code'] ?? null;
+            $dateTime = $event['date_time'] ?? null;
+
+            if (
+                is_string($code)
+                && in_array($code, $deliveredStatuses, true)
+                && is_string($dateTime)
+                && $dateTime !== ''
+            ) {
+                $deliveredAt = \Carbon\Carbon::parse($dateTime);
+                break;
             }
         }
 

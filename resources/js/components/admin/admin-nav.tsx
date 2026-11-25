@@ -6,6 +6,7 @@ import {
     ShoppingBag,
     BookOpen,
     LucideDownloadCloud,
+    ChartNoAxesCombined
 } from 'lucide-react'
 
 import { router, Link, usePage } from '@inertiajs/react'
@@ -38,7 +39,18 @@ export function AdminNav() {
                     <div className="flex items-center gap-1">
 
                         <Link
-                            href="/admin/orders"
+                            href={route('admin.index')}
+                            className="group flex min-h-10 items-center gap-2 rounded-md px-3 font-mono text-[11px] uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                            <ChartNoAxesCombined className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5" />
+
+                            <span className="hidden sm:inline">
+                                Статистика
+                            </span>
+                        </Link>
+
+                        <Link
+                            href={route('admin.orders.index')}
                             className="group flex min-h-10 items-center gap-2 rounded-md px-3 font-mono text-[11px] uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
                             <ShoppingBag className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5" />

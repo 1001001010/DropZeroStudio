@@ -23,6 +23,7 @@ class OrderStatusHistory extends Model
     protected $fillable = [
         'order_id',
         'event_type',
+        'event_key',
         'title',
         'old_status',
         'new_status',
@@ -30,6 +31,7 @@ class OrderStatusHistory extends Model
         'changed_by',
         'created_at',
     ];
+
     /**
      * Преобразование типов атрибутов.
      *

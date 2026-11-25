@@ -44,5 +44,6 @@ return [
             'CDEK_FILE_URL',
             'https://gateway.edu.cdek.ru'
         ),
+        'webhook_secret' => env('CDEK_WEBHOOK_SECRET'),
     ],
 ];

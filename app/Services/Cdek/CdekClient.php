@@ -214,4 +214,54 @@ class CdekClient
     {
         return $this->request('DELETE', $endpoint);
     }
+
+    /**
+     * Регистрирует подписку на уведомления СДЭК.
+     *
+     * @throws ConnectionException
+     * @throws RuntimeException
+     */
+    public function registerWebhook(string $url): array
+    {
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            throw new InvalidArgumentException(
+                'Необходимо указать корректный URL вебхука.',
+            );
+        }
+
+        return $this->post('webhooks', [
+            'type' => 'ORDER_STATUS',
+            'url' => $url,
+        ]);
+    }
+
+    /**
+     * Получает список зарегистрированных вебхуков.
+     *
+     * @throws ConnectionException
+     * @throws RuntimeException
+     */
+    public function getWebhooks(): array
+    {
+        return $this->get('webhooks');
+    }
+
+    /**
+     * Удаляет подписку на вебхук.
+     *
+     * @throws ConnectionException
+     * @throws RuntimeException
+     */
+    public function deleteWebhook(string $uuid): array
+    {
+        if (trim($uuid) === '') {
+            throw new InvalidArgumentException(
+                'Необходимо указать UUID вебхука.',
+            );
+        }
+
+        return $this->delete(
+            'webhooks/' . rawurlencode($uuid),
+        );
+    }
 }

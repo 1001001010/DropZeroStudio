@@ -1,6 +1,7 @@
 
 import type { ClipboardEvent, KeyboardEvent, ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import type { PageProps } from '@inertiajs/core'
 
 // =============================================================================
 // Application / Shared
@@ -982,4 +983,71 @@ export interface ConfirmDialogProps {
     description?: string
     onConfirm: () => void
     loading?: boolean
+}
+
+
+export interface AdminDashboardStats {
+    toys: {
+        total: number
+        activated: number
+        notActivated: number
+    }
+    users: {
+        total: number
+        change: number
+    }
+    orders: {
+        total: number
+        month: number
+        change: number
+    }
+    revenue: {
+        total: number
+        month: number
+        change: number
+    }
+}
+
+export interface AdminDashboardSale {
+    date: string
+    day: string
+    value: number
+}
+
+export interface AdminDashboardOrderItem {
+    id: number
+    product_name: string
+    drop_name: string | null
+    quantity: number
+    total_price: number | string
+}
+
+export interface AdminDashboardOrder {
+    id: number
+    number: string
+    customer_name: string
+    currency: string
+    total: number | string
+    status: string
+    paid_at: string | null
+    created_at: string
+    items: AdminDashboardOrderItem[]
+}
+
+export interface AdminDashboardTopDrop {
+    name: string
+    sold: number
+    revenue: number | string
+}
+
+export type AdminDashboardProps = PageProps & {
+    stats: AdminDashboardStats
+    sales: AdminDashboardSale[]
+    recentOrders: AdminDashboardOrder[]
+    topDrops: AdminDashboardTopDrop[]
+    currency: string
+    metrics: {
+        averageOrder: number
+        activationRate: number
+    }
 }
