@@ -74,8 +74,8 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
 
     // Данные получателя.
     const [recipient, setRecipient] = useState<RecipientForm>({
-        name: '',
-        phone: '',
+        name: order.customer_name ?? '',
+        phone: order.phone ?? '',
         city: '',
         cityCode: null,
         deliveryType: 'pvz',

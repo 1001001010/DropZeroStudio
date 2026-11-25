@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\ShipmentStatus;
 use App\Http\Controllers\Controller;
-use App\Models\Order;
+use App\Models\{Order, OrderStatusHistory};
 use App\Services\Cdek\CdekShipmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +16,7 @@ use Throwable;
 
 class CdekShipmentController extends Controller
 {
+
     /**
      * Создаёт отправление СДЭК для заказа.
      */
@@ -117,10 +118,7 @@ class CdekShipmentController extends Controller
             'recipient',
         );
 
-        /*
-         * Компания обязательна для отправителя.
-         * У получателя поле company не требуется.
-         */
+        // Формируем контакты для API СДЭК.
         $senderContact = $this->buildContact(
             contact: $sender,
             includeCompany: true,
@@ -134,9 +132,7 @@ class CdekShipmentController extends Controller
 
         /*
          * Создаём локальную запись до обращения к СДЭК.
-         *
-         * Блокировка заказа защищает от параллельного создания
-         * нескольких отправлений для одного заказа.
+         * Блокировка защищает от параллельного создания отправлений.
          */
         $shipment = DB::transaction(function () use ($order, $validated, $sender, $recipient, $firstPackage, ) {
             $lockedOrder = Order::query()
@@ -159,7 +155,6 @@ class CdekShipmentController extends Controller
                 'phone' => $recipient['phone'],
                 'country' => $recipient['country'] ?? 'Россия',
                 'city' => $recipient['city'],
-
                 'postal_code' => $recipient['postal_code'] ?? null,
 
                 'address' => $recipient['address']
@@ -248,20 +243,37 @@ class CdekShipmentController extends Controller
                 );
             }
 
-            // Сохраняем ответ СДЭК и идентификаторы.
-            $shipment->update([
-                'provider_order_id' => $shipmentUuid,
-                'tracking_number' => $entity['cdek_number'] ?? null,
+            /*
+             * Сохраняем данные отправления и событие истории
+             * в одной транзакции.
+             */
+            DB::transaction(function () use ($shipment, $order, $response, $shipmentUuid, $requestUuid, $entity, ): void {
+                // Сохраняем ответ СДЭК и идентификаторы.
+                $shipment->update([
+                    'provider_order_id' => $shipmentUuid,
+                    'tracking_number' => $entity['cdek_number'] ?? null,
 
-                'shipping_data' => array_merge(
-                    $shipment->shipping_data ?? [],
-                    [
-                        'response' => $response,
-                        'shipment_uuid' => $shipmentUuid,
-                        'request_uuid' => $requestUuid,
-                    ],
-                ),
-            ]);
+                    'shipping_data' => array_merge(
+                        $shipment->shipping_data ?? [],
+                        [
+                            'response' => $response,
+                            'shipment_uuid' => $shipmentUuid,
+                            'request_uuid' => $requestUuid,
+                        ],
+                    ),
+                ]);
+
+                // Добавляем событие в историю заказа.
+                OrderStatusHistory::create([
+                    'order_id' => $order->id,
+                    'event_type' => 'shipment',
+                    'title' => 'Создана заявка на отправку',
+                    'comment' => 'Заявка на отправку успешно зарегистрирована в СДЭК.',
+                    'old_status' => null,
+                    'new_status' => null,
+                    'changed_by' => auth()->id(),
+                ]);
+            });
 
             return response()->json([
                 'message' => 'Запрос на создание отправления отправлен в СДЭК.',
@@ -278,6 +290,7 @@ class CdekShipmentController extends Controller
             throw $exception;
         }
     }
+
 
     /**
      * Проверяет, что указано ровно одно направление:
