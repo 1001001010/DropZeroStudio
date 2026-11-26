@@ -335,11 +335,6 @@ export default function AdminDashboard() {
                     {/* Заголовок страницы */}
                     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                         <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
-                                <Sparkles className="size-3.5" />
-                                DropZeroStudio
-                            </div>
-
                             <div>
                                 <h1 className="text-3xl font-semibold tracking-tight">
                                     Обзор

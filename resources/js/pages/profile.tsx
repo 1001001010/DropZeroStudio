@@ -39,7 +39,7 @@ export default function ToyPage({ toys, activeToyCode }: Props) {
             <main className="min-h-dvh bg-[#050505] text-white">
                 <ToyNav />
 
-                <div className="mx-auto w-full max-w-[1480px] px-4 py-8 md:px-8 md:py-12">
+                <div className="w-full px-2 py-8 md:px-8 md:py-12">
                     <CharacterCarousel
                         toys={toys}
                         activeToyCode={activeToyCode}
