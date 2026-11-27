@@ -10,7 +10,7 @@ const Figure3D = lazy(() =>
 
 // Путь к публичной 3D-модели.
 const HERO_MODEL_PATH =
-    'skins/models/Model.glb'
+    '@/public/models/Model.glb'
 
 const heroDetails = [
     {
@@ -145,13 +145,13 @@ export function Hero() {
             {/* Основное декоративное освещение. */}
             <div
                 aria-hidden="true"
-                className="pointer-events-none absolute left-1/2 top-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/12 blur-[160px]"
+                className="pointer-events-none absolute left-1/2 top-1/2 h-100 w-180 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/12 blur-[160px]"
             />
 
             {/* Фоновый логотип. */}
             <span
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 bottom-[-4%] select-none text-center text-[26vw] font-bold leading-none tracking-tighter text-foreground/[0.03]"
+                className="pointer-events-none absolute inset-x-0 bottom-[-4%] select-none text-center text-[26vw] font-bold leading-none tracking-tighter text-foreground/3"
             >
                 DROPZERO
             </span>
@@ -159,7 +159,7 @@ export function Hero() {
             <div className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-8 px-6 lg:grid-cols-[1.05fr_1fr]">
                 <HeroContent />
 
-                <div className="order-1 h-[46vh] min-h-[340px] w-full lg:order-2 lg:h-[76vh]">
+                <div className="order-1 h-[46vh] min-h-85 w-full lg:order-2 lg:h-[76vh]">
                     <HeroScene />
                 </div>
             </div>

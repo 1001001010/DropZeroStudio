@@ -52,6 +52,7 @@
         "clsx": "^2.1.1",
         "concurrently": "^9.0.1",
         "date-fns": "^4.4.0",
+        "embla-carousel-react": "^8.6.0",
         "globals": "^15.14.0",
         "imask": "^7.6.1",
         "laravel-vite-plugin": "^1.0",

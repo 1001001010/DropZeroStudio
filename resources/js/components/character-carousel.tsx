@@ -2,16 +2,23 @@
 'use client'
 
 import {
+    lazy,
+    Suspense,
     useCallback,
     useEffect,
-    useRef,
     useState,
     type CSSProperties,
-    type TouchEvent,
-    type WheelEvent,
 } from 'react'
-import { lazy } from 'react'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious,
+    type CarouselApi,
+} from '@/components/ui/carousel'
+import { Spinner } from '@/components/ui/spinner'
 
 import { ToyInfoPanel } from './toy-info-panel'
 
@@ -59,92 +66,42 @@ export function CharacterCarousel({
         toys.findIndex((toy) => toy.code === activeToyCode),
     )
 
-    const [active, setActive] = useState(initialIndex)
-
-    const touchStart = useRef<number | null>(null)
-    const wheelLock = useRef(false)
+    const [activeIndex, setActiveIndex] = useState(initialIndex)
+    const [api, setApi] = useState<CarouselApi>()
 
     const hasMultipleToys = toys.length > 1
+    const character = toys[activeIndex]
 
-    const character = toys[active]
+    // Получаем API карусели.
+    const handleApi = useCallback((carouselApi: CarouselApi) => {
+        setApi(carouselApi)
+    }, [])
 
-    const change = useCallback(
-        (direction: number) => {
-            if (!hasMultipleToys) return
-
-            setActive((current) => {
-                return (
-                    current + direction + toys.length
-                ) % toys.length
-            })
-        },
-        [hasMultipleToys, toys.length],
-    )
-
+    // Синхронизируем активную фигурку с текущим слайдом.
     useEffect(() => {
-        if (!hasMultipleToys) return
+        if (!api) return
 
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'ArrowLeft') {
-                change(-1)
-            }
-
-            if (event.key === 'ArrowRight') {
-                change(1)
-            }
+        const updateActiveIndex = () => {
+            setActiveIndex(api.selectedScrollSnap())
         }
 
-        window.addEventListener('keydown', onKeyDown)
+        updateActiveIndex()
+
+        api.on('select', updateActiveIndex)
+        api.on('reInit', updateActiveIndex)
 
         return () => {
-            window.removeEventListener('keydown', onKeyDown)
+            api.off('select', updateActiveIndex)
+            api.off('reInit', updateActiveIndex)
         }
-    }, [change, hasMultipleToys])
+    }, [api])
 
-    const onWheel = (event: WheelEvent<HTMLElement>) => {
-        if (!hasMultipleToys) return
+    // Устанавливаем начальную фигурку.
+    useEffect(() => {
+        if (!api) return
 
-        if (
-            wheelLock.current ||
-            Math.abs(event.deltaY) < 22
-        ) {
-            return
-        }
-
-        wheelLock.current = true
-
-        change(event.deltaY > 0 ? 1 : -1)
-
-        window.setTimeout(() => {
-            wheelLock.current = false
-        }, 650)
-    }
-
-    const onTouchStart = (event: TouchEvent<HTMLElement>) => {
-        if (!hasMultipleToys) return
-
-        touchStart.current =
-            event.touches[0]?.clientX ?? null
-    }
-
-    const onTouchEnd = (event: TouchEvent<HTMLElement>) => {
-        if (
-            !hasMultipleToys ||
-            touchStart.current === null
-        ) {
-            return
-        }
-
-        const delta =
-            (event.changedTouches[0]?.clientX ??
-                touchStart.current) - touchStart.current
-
-        if (Math.abs(delta) > 48) {
-            change(delta < 0 ? 1 : -1)
-        }
-
-        touchStart.current = null
-    }
+        api.scrollTo(initialIndex)
+    }, [api, initialIndex])
 
     if (!character) {
         return null
@@ -155,127 +112,106 @@ export function CharacterCarousel({
     const accentColor = skin.primary_color || '#AA141E'
 
     const purchaseDate = character.claimed_at
-        ? new Date(character.claimed_at).toLocaleDateString(
-            'ru-RU',
-            {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-            },
-        )
+        ? new Date(character.claimed_at).toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        })
         : 'Не указана'
 
     const edition = `${String(character.number).padStart(3, '0')} / ${character.drop.edition_size}`
 
     return (
         <section
-            className="toy-page relative min-h-[calc(100svh-100px)] overflow-hidden text-[#1d211d]"
+            className="relative min-h-[calc(100svh-100px)] overflow-hidden bg-[#050505] text-white"
             style={
                 {
                     '--toy-accent': accentColor,
                 } as CSSProperties
             }
-            onWheel={hasMultipleToys ? onWheel : undefined}
-            onTouchStart={
-                hasMultipleToys ? onTouchStart : undefined
-            }
-            onTouchEnd={
-                hasMultipleToys ? onTouchEnd : undefined
-            }
         >
+            {/* Декоративный слой */}
             <div
-                className="grain"
+                className="pointer-events-none absolute inset-0 opacity-[0.035]"
                 aria-hidden="true"
-            />
-
-            <section
-                id="collection"
-                className="relative mx-auto flex min-h-[calc(100svh-100px)] max-w-[1440px] flex-col px-5 pb-8 md:px-12"
             >
-                <div className="relative grid flex-1 grid-cols-1 items-center gap-0 pt-2 md:grid-cols-[1.05fr_.95fr] md:gap-10 lg:gap-16">
-                    {/* Левая часть — фигурки */}
-                    <div className="flex flex-col">
-                        <div className="figure-stage relative order-1 flex min-h-[390px] items-center justify-center md:min-h-[620px]">
-                            {toys.map((item, index) => {
-                                const offset =
-                                    (index - active + toys.length) %
-                                    toys.length
+                <div
+                    className="h-full w-full"
+                    style={{
+                        backgroundImage:
+                            'url("data:image/svg+xml,%3Csvg viewBox=%270 0 180 180%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.85%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27 opacity=%270.45%27/%3E%3C/svg%3E")',
+                    }}
+                />
+            </div>
 
-                                const isCurrent = offset === 0
+            <div
+                id="collection"
+                className="relative mx-auto flex min-h-[calc(100svh-100px)] flex-col px-5 pb-8 md:px-16"
+            >
+                <div className="relative grid flex-1 grid-cols-1 items-center gap-8 pt-2 md:grid-cols-[1.3fr_.7fr] md:gap-6 lg:grid-cols-[1.35fr_.65fr] lg:gap-8">
 
-                                // При одной игрушке всегда используем
-                                // центральную позицию, а не previous.
-                                const position = !hasMultipleToys
-                                    ? 'current'
-                                    : offset === 1
-                                        ? 'next'
-                                        : offset === toys.length - 1
-                                            ? 'previous'
-                                            : 'current'
+                    {/* Левая часть — 3D-карусель */}
+                    <div className="flex min-w-0 flex-col items-center">
+                        <div className="relative w-full max-w-full">
+                            <Carousel
+                                setApi={handleApi}
+                                opts={{
+                                    align: 'center',
+                                    loop: hasMultipleToys,
+                                    watchDrag: false,
+                                }}
+                                className="w-full"
+                            >
+                                <CarouselContent className="-ml-4">
+                                    {toys.map((toy) => (
+                                        <CarouselItem
+                                            key={toy.id}
+                                            className="basis-1/2 pl-4"
+                                        >
+                                            <div className="mx-auto h-75 w-full md:h-125">
+                                                <Suspense
+                                                    fallback={
+                                                        <div className="flex h-full w-full items-center justify-center">
+                                                            <Spinner className="size-8 text-primary" />
+                                                        </div>
+                                                    }
+                                                >
+                                                    <Figure3D
+                                                        key={`${toy.code}-${toy.drop.skin.model_path ?? 'no-model'}`}
+                                                        modelPath={toy.drop.skin.model_path}
+                                                    />
+                                                </Suspense>
+                                            </div>
+                                        </CarouselItem>
+                                    ))}
+                                </CarouselContent>
 
-                                if (!hasMultipleToys && !isCurrent) {
-                                    return null
-                                }
+                                {/* Кнопки навигации снизу */}
+                                {hasMultipleToys && (
+                                    <div className="mt-4 flex items-center justify-center gap-3">
+                                        <CarouselPrevious className="static size-10 translate-y-0 border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white" />
 
-                                return (
-                                    <button
-                                        key={item.code}
-                                        type="button"
-                                        className={`figure-card figure-${position}${!hasMultipleToys ? ' figure-single' : ''}${isCurrent ? ' is-active' : ''}`}
-                                        onClick={() => {
-                                            if (!isCurrent) {
-                                                setActive(index)
-                                            }
-                                        }}
-                                        aria-label={
-                                            isCurrent
-                                                ? `${item.drop.skin.name}, выбрана`
-                                                : `Показать ${item.drop.skin.name}`
-                                        }
-                                        aria-current={
-                                            isCurrent ? 'true' : undefined
-                                        }
-                                        tabIndex={isCurrent ? -1 : 0}
-                                        disabled={!hasMultipleToys}
-                                    >
-                                        <Figure3D
-                                            key={`${item.code}-${item.drop.skin.model_path ?? 'no-model'}`}
-                                            modelPath={item.drop.skin.model_path}
-                                        />
-                                    </button>
-                                )
-                            })}
+                                        <CarouselNext className="static size-10 translate-y-0 border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white" />
+                                    </div>
+                                )}
+                            </Carousel>
 
-                            {/* Стрелки только если игрушек больше одной */}
-                            {hasMultipleToys && (
-                                <nav
-                                    className="absolute bottom-[-55px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-3"
-                                    aria-label="Мои игрушки"
-                                >
-                                    <button
-                                        type="button"
-                                        className="arrow-button"
-                                        onClick={() => change(-1)}
-                                        aria-label="Предыдущая игрушка"
-                                    >
-                                        <ArrowLeft />
-                                    </button>
+                            {/* Плавное затемнение и размытие краёв */}
+                            <div
+                                className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-linear-to-r from-[#050505] to-transparent backdrop-blur-[2px] md:w-20"
+                                aria-hidden="true"
+                            />
 
-                                    <button
-                                        type="button"
-                                        className="arrow-button"
-                                        onClick={() => change(1)}
-                                        aria-label="Следующая игрушка"
-                                    >
-                                        <ArrowRight />
-                                    </button>
-                                </nav>
-                            )}
+                            <div
+                                className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-linear-to-l from-[#050505] to-transparent backdrop-blur-[2px] md:w-20"
+                                aria-hidden="true"
+                            />
                         </div>
                     </div>
 
+
                     {/* Правая часть — информация */}
-                    <article className="relative z-10 order-2 mx-auto w-full max-w-[510px] pb-8 md:mx-0 md:pb-0">
+                    <article className="relative z-10 mx-auto w-full max-w-127.5 pb-8 md:ml-auto md:mr-0 md:pb-0">
                         <ToyInfoPanel
                             key={character.code}
                             code={character.code}
@@ -291,7 +227,7 @@ export function CharacterCarousel({
                         />
                     </article>
                 </div>
-            </section>
+            </div>
         </section>
     )
 }
