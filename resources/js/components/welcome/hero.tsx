@@ -9,8 +9,7 @@ const Figure3D = lazy(() =>
 )
 
 // Путь к публичной 3D-модели.
-const HERO_MODEL_PATH =
-    '@/public/models/Model.glb'
+const HERO_MODEL_PATH = 'skins/models/Model.glb'
 
 const heroDetails = [
     {
@@ -18,8 +17,8 @@ const heroDetails = [
         value: 'Плюш',
     },
     {
-        label: 'Статус',
-        value: 'Лимитированный выпуск',
+        label: 'Коллекция',
+        value: 'Лимитированная',
     },
     {
         label: 'Паспорт подлинности',

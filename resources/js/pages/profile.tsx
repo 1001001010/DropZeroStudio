@@ -1,7 +1,9 @@
 
 import { ToyNav } from '@/components/toy-nav'
-import { CharacterCarousel } from '@/components/character-carousel'
+import { CharacterCarousel } from '@/components/profile/character-carousel'
 import MainLayout from '@/layouts/MainLayout'
+import { Footer } from '@/components/welcome/final-cta'
+import { CollectorActivity } from '@/components/profile/collector-activity'
 
 interface Skin {
     name: string
@@ -35,7 +37,6 @@ interface Props {
 export default function ToyPage({ toys, activeToyCode }: Props) {
     return (
         <MainLayout>
-
             <main className="min-h-dvh bg-[#050505] text-white">
                 <ToyNav />
 
@@ -45,6 +46,8 @@ export default function ToyPage({ toys, activeToyCode }: Props) {
                         activeToyCode={activeToyCode}
                     />
                 </div>
+                <CollectorActivity />
+                <Footer />
             </main>
         </MainLayout>
     )

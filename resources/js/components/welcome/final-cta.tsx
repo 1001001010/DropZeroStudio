@@ -90,7 +90,7 @@ export function Footer() {
                             </span>
 
                             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                                Collect your story
+                                Собери свою историю
                             </span>
                         </div>
                     </div>
@@ -113,32 +113,11 @@ export function Footer() {
                             </Link>
 
                             <Link
-                                href="/shop"
+                                href="/login"
                                 className="text-sm transition-colors hover:text-primary focus-visible:text-primary"
                             >
-                                Магазин
+                                Личный кабинет
                             </Link>
-
-                            <a
-                                href="/#collection"
-                                className="text-sm transition-colors hover:text-primary focus-visible:text-primary"
-                            >
-                                Коллекция
-                            </a>
-
-                            <a
-                                href="/#specs"
-                                className="text-sm transition-colors hover:text-primary focus-visible:text-primary"
-                            >
-                                О фигурках
-                            </a>
-
-                            <a
-                                href="/#contact"
-                                className="text-sm transition-colors hover:text-primary focus-visible:text-primary"
-                            >
-                                Контакты
-                            </a>
                         </nav>
                     </div>
 
@@ -190,7 +169,7 @@ export function Footer() {
                     </p>
 
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                        Made for collectors.
+                        Создано для коллекционеров
                     </p>
                 </div>
             </div>

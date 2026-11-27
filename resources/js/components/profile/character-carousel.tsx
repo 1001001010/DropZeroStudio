@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/carousel'
 import { Spinner } from '@/components/ui/spinner'
 
-import { ToyInfoPanel } from './toy-info-panel'
+import { ToyInfoPanel } from '../toy-info-panel'
 
 const Figure3D = lazy(() =>
     import('@/components/figure-3d').then((module) => ({
@@ -166,7 +166,7 @@ export function CharacterCarousel({
                                     {toys.map((toy) => (
                                         <CarouselItem
                                             key={toy.id}
-                                            className="basis-1/2 pl-4"
+                                            className={`${toys.length < 2 ? 'basis-full' : 'basis-1/2'} pl-4`}
                                         >
                                             <div className="mx-auto h-75 w-full md:h-125">
                                                 <Suspense
