@@ -1,6 +1,7 @@
 
 import { ToyNav } from '@/components/toy-nav'
 import { CharacterCarousel } from '@/components/profile/character-carousel'
+// import { CollectionMap } from '@/components/profile/collect  on-map'
 import MainLayout from '@/layouts/MainLayout'
 import { Footer } from '@/components/welcome/final-cta'
 import { CollectorActivity } from '@/components/profile/collector-activity'
@@ -46,7 +47,11 @@ export default function ToyPage({ toys, activeToyCode }: Props) {
                         activeToyCode={activeToyCode}
                     />
                 </div>
+
+
                 <CollectorActivity />
+
+                {/* <CollectionMap /> */}
                 <Footer />
             </main>
         </MainLayout>

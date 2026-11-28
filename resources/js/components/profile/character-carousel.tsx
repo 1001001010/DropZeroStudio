@@ -19,6 +19,7 @@ import {
     type CarouselApi,
 } from '@/components/ui/carousel'
 import { Spinner } from '@/components/ui/spinner'
+// import { CharacterLoreBook } from './character-lore-book'
 
 import { ToyInfoPanel } from '../toy-info-panel'
 
@@ -121,6 +122,9 @@ export function CharacterCarousel({
 
     const edition = `${String(character.number).padStart(3, '0')} / ${character.drop.edition_size}`
 
+    console.count('CharacterCarousel render')
+    console.log('Active toy:', character.code, 'Index:', activeIndex)
+
     return (
         <section
             className="relative min-h-[calc(100svh-100px)] overflow-hidden bg-[#050505] text-white"
@@ -166,7 +170,7 @@ export function CharacterCarousel({
                                     {toys.map((toy) => (
                                         <CarouselItem
                                             key={toy.id}
-                                            className={`${toys.length < 2 ? 'basis-full' : 'basis-1/2'} pl-4`}
+                                            className={`${toys.length <= 2 ? 'basis-full' : 'basis-1/2'} pl-4`}
                                         >
                                             <div className="mx-auto h-75 w-full md:h-125">
                                                 <Suspense
@@ -213,7 +217,7 @@ export function CharacterCarousel({
                     {/* Правая часть — информация */}
                     <article className="relative z-10 mx-auto w-full max-w-127.5 pb-8 md:ml-auto md:mr-0 md:pb-0">
                         <ToyInfoPanel
-                            key={character.code}
+                            // key={character.code}
                             code={character.code}
                             name={skin.name}
                             series={character.drop.name}
@@ -225,6 +229,11 @@ export function CharacterCarousel({
                             artist="—"
                             authenticity="Подтверждена"
                         />
+
+                        {/* <CharacterLoreBook
+                            // key={character.code}
+                            characterName={skin.name}
+                        /> */}
                     </article>
                 </div>
             </div>
