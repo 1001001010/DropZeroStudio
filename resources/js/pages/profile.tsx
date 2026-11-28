@@ -5,6 +5,7 @@ import { CharacterCarousel } from '@/components/profile/character-carousel'
 import MainLayout from '@/layouts/MainLayout'
 import { Footer } from '@/components/welcome/final-cta'
 import { CollectorActivity } from '@/components/profile/collector-activity'
+import { CollectorHistoryEvent } from '@/types'
 
 interface Skin {
     name: string
@@ -33,9 +34,10 @@ interface Toy {
 interface Props {
     toys: Toy[]
     activeToyCode: string
+    history: CollectorHistoryEvent[]
 }
 
-export default function ToyPage({ toys, activeToyCode }: Props) {
+export default function ToyPage({ toys, activeToyCode, history }: Props) {
     return (
         <MainLayout>
             <main className="min-h-dvh bg-[#050505] text-white">
@@ -49,7 +51,7 @@ export default function ToyPage({ toys, activeToyCode }: Props) {
                 </div>
 
 
-                <CollectorActivity />
+                <CollectorActivity history={history} />
 
                 {/* <CollectionMap /> */}
                 <Footer />

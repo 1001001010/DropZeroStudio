@@ -1051,3 +1051,13 @@ export type AdminDashboardProps = PageProps & {
         activationRate: number
     }
 }
+
+export interface CollectorHistoryEvent {
+    id: number
+    title: string
+    description: string
+    date: string
+    time: string
+    icon: 'fingerprint' | 'package'
+    toyCode: string
+}
